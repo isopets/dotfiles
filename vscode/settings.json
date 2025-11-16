@@ -1,0 +1,236 @@
+{
+  "editor.suggestSelection": "first",
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+  "files.exclude": {
+    "**/.classpath": true,
+    "**/.project": true,
+    "**/.settings": true,
+    "**/.factorypath": true
+  },
+  "workbench.settings.useSplitJSON": true,
+  "editor.fontSize": 15,
+  "markdown.preview.fontSize": 18,
+  "debug.console.fontSize": 16,
+  "editor.fontFamily": "HackGen35Nerd Console, Consolas, 'Courier New', monospace",
+  "terminal.integrated.fontSize": 16,
+  "terminal.explorerKind": "external",
+  "editor.formatOnSave": true,
+  "backgroundCover.imagePath": "c:\\Users\\isogaiyuto\\Documents\\PC壁紙\\wallpaperbetter.com_1920x1080 (7).jpg",
+  "window.title": "${dirty}\\${activeEditorMedium}${separator}${rootName}",
+  "editor.minimap.side": "left",
+  "editor.minimap.showSlider": "always",
+  "workbench.tree.indent": 25,
+  "workbench.tree.renderIndentGuides": "always",
+  "editor.cursorStyle": "block-outline",
+  "prettier.arrowParens": "avoid",
+  "editor.mouseWheelZoom": true,
+  "debug.inlineValues": "on",
+  "debug.openDebug": "neverOpen",
+  "editor.copyWithSyntaxHighlighting": false,
+  "editor.renderControlCharacters": true,
+  "editor.renderWhitespace": "all",
+  "editor.showFoldingControls": "always",
+  "editor.wordSeparators": "`~!@#%^&*()-=+[{]}\\|;:'\",.<>/?",
+  "editor.wordWrap": "on",
+  /* 各言語、ファイル固有の設定 */
+  "[csv]": {
+    // 行の折り返し表示
+    "editor.wordWrap": "off"
+  },
+  "[json]": {
+    // 既定のフォーマッター
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[log]": {
+    // 行の折り返し表示
+    "editor.wordWrap": "off"
+  },
+  "[python]": {
+    // 1つのタブに相当する半角スペースの数
+    "editor.tabSize": 4
+  },
+  "[tsv]": {
+    // Tabキーで半角スペースを挿入
+    "editor.insertSpaces": false,
+    // 行の折り返し表示
+    "editor.wordWrap": "off"
+  },
+  "redhat.telemetry.enabled": true,
+  "vs-kubernetes": {
+    "vscode-kubernetes.minikube-path.windows": "C:\\Users\\isogaiyuto\\.vs-kubernetes\\tools\\minikube\\windows-amd64\\minikube.exe",
+    "vscode-kubernetes.helm-path.windows": "C:\\Users\\isogaiyuto\\.vs-kubernetes\\tools\\helm\\windows-amd64\\helm.exe",
+    "vscode-kubernetes.minikube-path-windows": "C:\\Users\\isogaiyuto\\.vs-kubernetes\\tools\\minikube\\windows-amd64\\minikube.exe"
+  },
+  "files.autoSave": "afterDelay",
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "sync.gist": "947578f687e27a94e58674a72157d423",
+  "sync.autoUpload": true,
+  "sync.autoDownload": true,
+  "tabnine.experimentalAutoImports": true,
+  "security.workspace.trust.untrustedFiles": "open",
+  "bracket-pair-colorizer-2.depreciation-notice": false,
+  "kite.showWelcomeNotificationOnStartup": false,
+  "files.trimTrailingWhitespace": true,
+  "react-native-tools.showUserTips": false,
+  "dart.flutterAdbConnectOnChromeOs": true,
+  "phpformatter.composer": true,
+  "git.autofetch": true,
+  "intelephense.diagnostics.undefinedFunctions": false,
+  "explorer.confirmDragAndDrop": false,
+  "files.eol": "\n",
+  "codeQL.telemetry.enableTelemetry": true,
+  "json.schemas": [],
+  "vsicons.dontShowNewVersionMessage": true,
+  "yaml.customTags": [
+    "!And",
+    "!And sequence",
+    "!If",
+    "!If sequence",
+    "!Not",
+    "!Not sequence",
+    "!Equals",
+    "!Equals sequence",
+    "!Or",
+    "!Or sequence",
+    "!FindInMap",
+    "!FindInMap sequence",
+    "!Base64",
+    "!Join",
+    "!Join sequence",
+    "!Cidr",
+    "!Ref",
+    "!Sub",
+    "!Sub sequence",
+    "!GetAtt",
+    "!GetAZs",
+    "!ImportValue",
+    "!ImportValue sequence",
+    "!Select",
+    "!Select sequence",
+    "!Split",
+    "!Split sequence"
+  ],
+  "workbench.editor.languageDetection": false,
+  "workbench.editor.languageDetectionHints": {},
+  "explorer.confirmDelete": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "html.format.contentUnformatted": "pre, code, textarea, script",
+  "html.format.extraLiners": "l",
+  "html.format.indentInnerHtml": true,
+  "html.format.indentHandlebars": true,
+  "git.enableSmartCommit": true,
+  "prettier.jsxBracketSameLine": true,
+  "prettier.bracketSpacing": false,
+  "html.format.unformatted": "",
+  "html.format.endWithNewline": true,
+  "search.exclude": {
+    "**/.history": true
+  },
+  "[javascriptreact]": {},
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "aws.profile": "profile:iam-next-yuto",
+  "[terraform]": {},
+  "files.associations": {
+    "*.ejs": "html",
+    "*.tf": "terraform",
+    "*.yml": "yaml",
+    "blade.php": "html",
+    "*.json": "jsonc",
+    "*.rmd": "markdown"
+  },
+  "terminal.integrated.cwd": "C:\\Users\\isogaiyuto\\Dropbox\\ddwad\\Desktop",
+  "powerShellUniversal.samplesDirectory": "C:\\Users\\isogaiyuto\\AppData\\Roaming",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell"
+    },
+    "Command Prompt": {
+      "path": [
+        "${env:windir}\\Sysnative\\cmd.exe",
+        "${env:windir}\\System32\\cmd.exe"
+      ],
+      "args": [],
+      "icon": "terminal-cmd"
+    },
+    "Git Bash": {
+      "source": "Git Bash"
+    },
+    "Cygwin": {
+      "path": "C:\\cygwin64\\bin\\bash.exe",
+      "args": ["--login"]
+    },
+    "Ubuntu-20.04 (WSL)": {
+      "path": "C:\\WINDOWS\\System32\\wsl.exe",
+      "args": ["-d", "Ubuntu-20.04"]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+"git.confirmSync": false,
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact",
+    "vue": "html",
+    "erb": "html",
+    "php": "html",
+    "twig": "html",
+    "scss": "css",
+    "blade.php": "html"
+  },
+  "emmet.variables": {
+    "lang": "ja"
+  },
+  "emmet.syntaxProfiles": {
+    "html": {
+      "filters": "html,c"
+    }
+  },
+  "emmet.triggerExpansionOnTab": true,
+  "deepl.apiKey": "d50cf4c5-02fd-986d-b6b7-d6661c3bcbd7:fx",
+  "vscode-neovim.neovimExecutablePaths.Win32": "C/tools/neovim/nvim-win64/share/nvim/",
+  "editor.scrollBeyondLastLine": false,
+  "vscode-neovim.neovimExecutablePaths.win32": "C:\\tools\\neovim\\nvim-win64\\bin\\nvim.exe",
+  "vscode-neovim.textDecorationsAtTop": true,
+  "vscode-neovim.neovimInitVimPaths.win32": "C:\\Users\\isogaiyuto\\.config\\nvim\\init.vim",
+  "terminal.integrated.copyOnSelection": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.suggest.showMethods": true,
+  "editor.suggest.preview": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.snippetSuggestions": "top",
+  "remote.WSL.debug": true,
+  "terminal.integrated.shellIntegration.enabled": true,
+  "intelephense.diagnostics.undefinedTypes": false,
+  "explorer.fileNesting.enabled": true,
+  "html.format.enable": false,
+  "html.format.templating": true,
+  "remote.WSL.fileWatcher.polling": true,
+  "bladeFormatter.format.indentSize": 2,
+  "[blade]": {
+    "editor.defaultFormatter": "shufo.vscode-blade-formatter"
+  },
+  "blade.format.enable": true,
+  "cSpell.language": "en,ja",
+  "cSpell.ignoreRegExpList": ["[０-９Ａ-Ｚａ-ｚぁ-んァ-ヶ亜-熙纊-黑]+"],
+  "git.repositoryScanIgnoredFolders": ["node_modules", ".history"],
+  "editor.foldingMaximumRegions": 6000,
+  "yaml.schemas": {
+    "file:///c%3A/Users/isogaiyuto/.vscode/extensions/atlassian.atlascode-3.0.9/resources/schemas/pipelines-schema.json": "bitbucket-pipelines.yml"
+  },
+  "markdown.preview.breaks": true,
+  "npm.keybindingsChangedWarningShown": true,
+  "editor.tabCompletion": "on",
+  "powershell.integratedConsole.focusConsoleOnExecute": false,
+  "files.defaultLanguage": "powershell",
+  "powershell.buttons.showPanelMovementButtons": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": true,
+  "workbench.colorCustomizations": {},
+  "deepl.defaultSourceLanguage": "JA",
+  "deepl.defaultTargetLanguage": "JA",
+  "editor.codeActionsOnSave": {},
+  "deepl.usePro": false,
+  "extensions.experimental.affinity": {
+    "asvetliakov.vscode-neovim": 1
+  }
+}
