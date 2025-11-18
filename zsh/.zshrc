@@ -1,21 +1,33 @@
-# --- Modern CLI Tools Settings ---
+# =================================================================
+# 🚀 My Dotfiles .zshrc (Loader)
+# =================================================================
 
-# 1. zoxide (cd の代わり)
-eval "$(zoxide init zsh)"
-alias cd="z"
+ZSH_CONFIG_DIR="$HOME/dotfiles/zsh/config"
 
-# 2. eza (ls の代わり)
-# --icons: アイコン表示 (※Nerd Fontが必要)
-# --git: Gitの状態も表示
-alias ls="eza --icons --git"
-alias ll="eza --icons --git -l"
-alias la="eza --icons --git -la"
+# 拡張機能の自動同期チェック (1日1回)
+VSCODE_SYNC_SCRIPT="$HOME/dotfiles/vscode/sync_extensions.sh"
+LAST_SYNC_FILE="$HOME/.vscode_last_sync"
 
-# 3. bat (cat の代わり)
-alias cat="bat"
+if [ -f "$LAST_SYNC_FILE" ]; then
+    LAST_SYNC_TIME=$(cat "$LAST_SYNC_FILE")
+    if [ $(( $(date +%s) - LAST_SYNC_TIME )) -gt 86400 ]; then
+        nohup "$VSCODE_SYNC_SCRIPT" > /dev/null 2>&1 & 
+        date +%s > "$LAST_SYNC_FILE"
+        echo "⏳ VS Code拡張機能の自動同期を実行しました。"
+    fi
+else
+    nohup "$VSCODE_SYNC_SCRIPT" > /dev/null 2>&1 &
+    date +%s > "$LAST_SYNC_FILE"
+fi
 
-# 4. lazygit
-alias lg="lazygit"
+# 設定ファイルの読み込み
+if [ -d "$ZSH_CONFIG_DIR" ]; then
+    for file in "$ZSH_CONFIG_DIR"/*.zsh; do
+        source "$file"
+    done
+fi
 
-# 5. fzf (Ctrl+R で履歴検索など)
-source <(fzf --zsh)
+# 未コミットの変更チェック
+if [[ $(git -C "$HOME/dotfiles" status --porcelain) ]]; then
+    echo "🚨🚨🚨 Dotfilesの未コミットの変更があります！ 🚨🚨🚨"
+fi

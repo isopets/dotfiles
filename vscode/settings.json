@@ -232,5 +232,10 @@
   "deepl.usePro": false,
   "extensions.experimental.affinity": {
     "asvetliakov.vscode-neovim": 1
-  }
+  },
+  "snyk.advanced.cliPath": "/Users/isogaiyuto/Library/Application Support/snyk/vscode-cli/snyk-macos-arm64",
+  "snyk.securityAtInception.autoConfigureSnykMcpServer": true,
+  "snyk.securityAtInception.executionFrequency": "On Code Generation",
+  "snyk.yesWelcomeNotification": false,
+  "window.newWindowProfile": "[Base] Common"
 }

@@ -1,89 +1,59 @@
 #!/bin/bash
+# Dotfiles Link Script (Final Version)
 
-# ----------------------------------------------------------
-# Dotfiles Link Script (Clear & Safe Edition)
-# 実行方法: ./setup.sh
-# ----------------------------------------------------------
-
-# このスクリプトがある場所を基準にする
 DOT_DIR="$HOME/dotfiles"
-
 echo "🚀 Dotfilesのリンク作成を開始します..."
 
-# ----------------------------------------------------------
-# 1. 関数定義: 安全にシンボリックリンクを貼る関数
-# usage: link_file "dotfiles内のパス" "ホームディレクトリのパス"
-# ----------------------------------------------------------
 link_file() {
     local source="$DOT_DIR/$1"
     local target="$HOME/$2"
 
-    # リンク元のファイルが存在しない場合はメッセージを出してスキップ
     if [ ! -e "$source" ]; then
-        # ☁️ = 元ファイルがない（まだ作っていない場合など）
         echo "☁️  Missing: $source"
         return
     fi
-
-    # 親フォルダがない場合は作成する（例: ~/.configなど）
     mkdir -p "$(dirname "$target")"
-
-    # 【重要】ターゲットが既に存在するかチェック
     if [ -e "$target" ]; then
-        # 既に存在する場合は何もしない
-        # 👌 = 既にファイルがあるからOK（現状維持）
         echo "👌 Skip: Already exists: $target"
     else
-        # 存在しない場合のみリンクを作成
-        # ✅ = リンク作成成功（分かりやすいチェックマーク）
         ln -sv "$source" "$target"
         echo "✅ Linked: $target"
     fi
 }
 
-# ----------------------------------------------------------
-# 2. Zsh (シェル)
-# ----------------------------------------------------------
 echo -e "\n--- Zsh ---"
 link_file "zsh/.zshrc" ".zshrc"
-link_file "zsh/.zprofile" ".zprofile"
+link_file "zsh/.zprofile" ".zprofile" # 必要なら
 
-# ----------------------------------------------------------
-# 3. Git
-# ----------------------------------------------------------
 echo -e "\n--- Git ---"
 link_file "git/.gitconfig" ".gitconfig"
 link_file "git/.gitignore_global" ".gitignore_global"
 
-# ----------------------------------------------------------
-# 4. Warp (ターミナル)
-# ----------------------------------------------------------
-echo -e "\n--- Warp ---"
-# Warpはフォルダごとリンクする
+echo -e "\n--- Warp & Tmux ---"
 link_file "warp/.warp" ".warp"
+link_file "tmux/.tmux.conf" ".tmux.conf"
 
-# ----------------------------------------------------------
-# 5. VS Code (macOS用パス)
-# ----------------------------------------------------------
-echo -e "\n--- VS Code ---"
-
-# macOSのVSCode設定パス
+echo -e "\n--- VS Code Profiles ---"
 VSCODE_USER_DIR="$HOME/Library/Application Support/Code/User"
+DOT_VSCODE_PROFILES="$DOT_DIR/vscode/profiles"
 
-if [ -d "$VSCODE_USER_DIR" ]; then
-    # settings.json
-    link_file "vscode/settings.json" "Library/Application Support/Code/User/settings.json"
-    
-    # keybindings.json
+if [ -d "$VSCODE_USER_DIR" ] && [ -d "$DOT_VSCODE_PROFILES" ]; then
+    # 基本設定
     link_file "vscode/keybindings.json" "Library/Application Support/Code/User/keybindings.json"
-    
-    # snippetsフォルダ (フォルダごとリンク)
     link_file "vscode/snippets" "Library/Application Support/Code/User/snippets"
+    
+    # プロファイルの動的リンク
+    for profile_path in "$DOT_VSCODE_PROFILES"/*; do
+        if [ -d "$profile_path" ]; then
+            profile_name=$(basename "$profile_path")
+            target_dir="$VSCODE_USER_DIR/profiles/$profile_name"
+            mkdir -p "$target_dir"
+            echo "   🔗 Linking Profile: $profile_name"
+            ln -sfv "$profile_path/settings.json" "$target_dir/settings.json"
+        fi
+    done
 else
-    echo "👀 VS Code directory not found. Skipping..."
+    echo "👀 VS Code directories not found."
 fi
 
-# ----------------------------------------------------------
-# 完了
-# ----------------------------------------------------------
 echo -e "\n🎉 All done! Everything is safe."
