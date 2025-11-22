@@ -1,12 +1,16 @@
-# --- Config Aliases ---
-
-# 設定ファイルを開く・反映
 alias zshconfig="code ~/.zshrc"
 alias sz="source ~/.zshrc"
-
-# ディレクトリ移動
 alias dot="cd ~/dotfiles"
-alias o="open ."
-
-# バックアップ
 alias brew-backup="brew bundle dump --file=~/dotfiles/macos/Brewfile --force"
+alias o="open ."
+alias rules="bat ~/dotfiles/docs/WORKFLOW.md"
+alias edit-rules="code ~/dotfiles/docs/WORKFLOW.md"
+alias edit-vscode="code ~/dotfiles/vscode/source"
+alias update-vscode="~/dotfiles/vscode/update_settings.sh"
+alias unlock-vscode="find \"$HOME/Library/Application Support/Code/User/profiles\" -name settings.json -exec chmod +w {} \;"
+alias diff-vscode="~/dotfiles/zsh/config/04_functions.zsh diff-vscode-cli"
+# Copy Gemini Key
+alias copy-key="echo -n \$GEMINI_API_KEY | pbcopy && echo '✅ API Key copied!'"
+# Expert Mode Switch
+alias expert-on="touch $HOME/.dotfiles_expert_mode && echo '😎 Expert Mode: ON'"
+alias expert-off="rm -f $HOME/.dotfiles_expert_mode && echo '👶 Beginner Mode: ON'"

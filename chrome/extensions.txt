@@ -1,0 +1,3 @@
+# ID # Name [TAG]
+cjpalhdlnbpafiamejdnhcphjbkeiagm # uBlock Origin [ALL]
+nngceckbapebfimnlniiiahkandclblb # Bitwarden [ALL]

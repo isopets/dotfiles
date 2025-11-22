@@ -1,13 +1,5 @@
 #!/bin/bash
-DOTFILES_EXTENSIONS_FILE="$HOME/dotfiles/vscode/install_extensions.sh"
-TEMP_FILE=$(mktemp)
-
-code --list-extensions > "$TEMP_FILE"
-
-while IFS= read -r id; do
-    if ! grep -q "code --install-extension $id" "$DOTFILES_EXTENSIONS_FILE"; then
-        echo "code --install-extension $id" >> "$DOTFILES_EXTENSIONS_FILE"
-    fi
-done < "$TEMP_FILE"
-
-rm "$TEMP_FILE"
+FILE="$HOME/dotfiles/vscode/install_extensions.sh"; TEMP=$(mktemp)
+code --list-extensions > "$TEMP"
+while read id; do grep -q "$id" "$FILE" || echo "code --install-extension $id" >> "$FILE"; done < "$TEMP"
+rm "$TEMP"
