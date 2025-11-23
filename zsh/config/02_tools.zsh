@@ -7,10 +7,9 @@ if command -v lazygit &> /dev/null; then alias lg="lazygit"; fi
 if command -v fzf &> /dev/null; then source <(fzf --zsh); fi
 if command -v direnv &> /dev/null; then eval "$(direnv hook zsh)"; fi
 if command -v starship &> /dev/null; then eval "$(starship init zsh)"; fi
-# mise (Language Manager)
 if command -v mise &> /dev/null; then eval "$(mise activate zsh)"; fi
 
-# Sheldon (Warp以外で有効化)
+# Sheldon (Warp以外)
 if [[ "$TERM_PROGRAM" != "Warp.app" ]]; then
     if command -v sheldon &> /dev/null; then
         eval "$(sheldon --config-file ~/dotfiles/sheldon/plugins.toml source)"

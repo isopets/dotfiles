@@ -1,3 +1,3 @@
-[Base] Common:none
+[Base] Common:_common.json
 [Lang] Python:python.json
 [Lang] Web:web.json

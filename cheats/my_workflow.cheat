@@ -1,0 +1,25 @@
+% My Dotfiles Workflow
+
+# 🆕 新しいプロジェクトを作成する
+mkproj <category> <project_name>
+
+# 🚀 プロジェクトを開いて作業を開始する (コックピット起動)
+work <project_name>
+
+# 📦 プロジェクトをアーカイブする（完了）
+archive <project_name>
+
+# 🐍 VS Codeのプロファイルを作成する
+mkprofile "<profile_name>" <json_name>
+
+# 🗑️ VS Codeのプロファイルを削除する
+rmprofile "<profile_name>"
+
+# 🧪 VS Codeの試着モードを開始する
+trial-start
+
+# 🔑 BitwardenからAPIキーを注入する
+bwenv "<item_name>" "<env_var_name>"
+
+$category: echo "Personal Work Playground OSS" | tr ' ' '\n'$ project_name: ls ~/PARA/1_Projects
+$ profile_name: grep -v "^#" ~/dotfiles/vscode/profile_list.txt | cut -d: -f1
