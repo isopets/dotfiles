@@ -11,4 +11,6 @@ alias unlock-vscode="find \"$HOME/Library/Application Support/Code/User/profiles
 alias diff-vscode="~/dotfiles/zsh/config/04_functions.zsh diff-vscode-cli"
 alias copy-key="echo -n \$GEMINI_API_KEY | pbcopy && echo '✅ API Key copied!'"
 alias expert-on="touch $HOME/.dotfiles_expert_mode && echo '😎 Expert Mode: ON'"
-alias expert-off="rm -f $HOME/.dotfiles_expert_mode && echo '👶 Beginner Mode: OFF'"
+alias expert-off="rm -f $HOME/.dotfiles_expert_mode && echo '👶 Beginner Mode: ON'"
+# 互換性エイリアス
+alias done="finish-work"

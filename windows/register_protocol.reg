@@ -1,0 +1,15 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\dotfiles]
+@="URL:Dotfiles Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\dotfiles\DefaultIcon]
+@="dotfiles-handler.bat,1"
+
+[HKEY_CLASSES_ROOT\dotfiles\shell]
+
+[HKEY_CLASSES_ROOT\dotfiles\shell\open]
+
+[HKEY_CLASSES_ROOT\dotfiles\shell\open\command]
+@="\"C:\\Users\\Public\\dotfiles\\windows\\bin\\dotfiles-handler.bat\" \"%1\""
