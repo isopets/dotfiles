@@ -1,33 +1,20 @@
 { config, pkgs, ... }:
-
 {
   home.enableNixpkgsReleaseCheck = false;
   home.username = "isogaiyuto";
   home.homeDirectory = "/Users/isogaiyuto";
-
-  # macOSでのクラッシュ回避 (重要)
-  services.kdeconnect.enable = false;
+  home.backupFileExtension = "backup";     # ★重要: バックアップ設定
+  services.kdeconnect.enable = false;      # ★重要: クラッシュ回避
 
   home.packages = with pkgs; [
-    eza
-    bat
-    lazygit
-    fzf
-    direnv
-    jq
-    snyk
-    gnupg
-    mise  # 24.05なら存在します
+    eza bat lazygit fzf direnv jq snyk gnupg mise
   ];
 
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    initExtra = "source ~/dotfiles/zsh/.zshrc";
+    initExtra = "source ~/dotfiles/zsh/.zshrc"; 
   };
-
   programs.git.enable = true;
-
-  # バージョンを合わせる
-  home.stateVersion = "24.05";
+  home.stateVersion = "23.11";
 }
