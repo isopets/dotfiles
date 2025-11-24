@@ -2,7 +2,7 @@
 # 🚀 My Dotfiles .zshrc (Loader)
 # =================================================================
 
-# 1. 秘密情報の読み込み (APIキーなど)
+# 1. 秘密情報の読み込み
 if [ -f "$HOME/dotfiles/zsh/.zsh_secrets" ]; then
     source "$HOME/dotfiles/zsh/.zsh_secrets"
 fi
@@ -15,8 +15,13 @@ VSCODE_SYNC_SCRIPT="$HOME/dotfiles/vscode/sync_extensions.sh"
 LAST_SYNC_FILE="$HOME/.vscode_last_sync"
 
 if [ -f "$LAST_SYNC_FILE" ]; then
-    # 最終実行から24時間(86400秒)経過しているか？
-    if [ $(( $(date +%s) - $(cat "$LAST_SYNC_FILE") )) -gt 86400 ]; then
+    # 現在時刻と最終実行時刻の差分を計算
+    NOW=$(date +%s)
+    LAST=$(cat "$LAST_SYNC_FILE")
+    DIFF=$((NOW - LAST))
+    
+    # 24時間(86400秒)経過していたら実行
+    if [ "$DIFF" -gt 86400 ]; then
         nohup "$VSCODE_SYNC_SCRIPT" > /dev/null 2>&1 &!
         date +%s > "$LAST_SYNC_FILE"
     fi
@@ -26,8 +31,7 @@ else
     date +%s > "$LAST_SYNC_FILE"
 fi
 
-# 4. 設定ファイルの読み込み (ここが重要)
-# 番号順 (01->02->03->04) に読み込むことで依存関係を解決
+# 4. 設定ファイルの読み込み
 if [ -d "$ZSH_CONFIG_DIR" ]; then
     for file in "$ZSH_CONFIG_DIR"/*.zsh; do
         source "$file"
@@ -35,8 +39,8 @@ if [ -d "$ZSH_CONFIG_DIR" ]; then
 fi
 
 # 5. 未コミットの警告
-if command -v git &> /dev/null; then
-    if [[ $(git -C "$HOME/dotfiles" status --porcelain 2>/dev/null) ]]; then
+if command -v git > /dev/null 2>&1; then
+    if [[ -n $(git -C "$HOME/dotfiles" status --porcelain 2>/dev/null) ]]; then
         echo "🚨 Dotfiles Uncommitted Changes!"
     fi
 fi
@@ -46,7 +50,7 @@ if [ -x "$HOME/dotfiles/scripts/check_unmanaged_profiles.sh" ]; then
     "$HOME/dotfiles/scripts/check_unmanaged_profiles.sh"
 fi
 
-# 7. 今日のヒント (04_functions.zshで定義)
-if command -v show-tip &> /dev/null; then
+# 7. 今日のヒント
+if command -v show-tip > /dev/null 2>&1; then
     show-tip
 fi
