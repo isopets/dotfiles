@@ -23,7 +23,7 @@
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    initExtra = "source ~/.zshrc";
+    initExtra = "source ~/dotfiles/zsh/.zshrc";
   };
 
   programs.git.enable = true;
