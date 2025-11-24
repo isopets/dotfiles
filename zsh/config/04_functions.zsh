@@ -171,3 +171,47 @@ function save-key() { echo "Saved."; notify "Security" "Key saved to Bitwarden";
 function bwfzf() { echo "Env set."; }
 function rules() { bat ~/dotfiles/docs/WORKFLOW.md; }
 function sz() { source ~/.zshrc; notify "Zsh" "Reloaded!"; }
+
+# --- 7. Nix Smart Manager ---
+function nix-up() {
+    echo "🚀 Updating Nix Environment..."
+    
+    # 1. Gitに変更を教える (Flakeの必須要件)
+    git -C ~/dotfiles add .
+    
+    # 2. 適用実行 (バックアップ設定が効いているのでエラーが出ない)
+    if nix --experimental-features "nix-command flakes" run home-manager -- switch --flake ~/dotfiles#isogaiyuto; then
+        echo "✅ Update Complete!"
+        
+        # 3. シェルリロード
+        source ~/.zshrc
+        echo "🔄 Shell reloaded."
+    else
+        echo "❌ Update Failed."
+    fi
+}
+
+# 編集用ショートカット
+function nix-edit() {
+    code ~/dotfiles/home.nix
+}
+
+# --- 🚑 Emergency Fix: Nix Manager ---
+function nix-up() {
+    echo "🚀 Updating Nix Environment..."
+    
+    # 1. Gitに変更を教える
+    git -C ~/dotfiles add .
+    
+    # 2. 適用実行
+    if nix --experimental-features "nix-command flakes" run home-manager -- switch --flake ~/dotfiles#isogaiyuto; then
+        echo "✅ Update Complete!"
+        source ~/.zshrc
+    else
+        echo "❌ Update Failed."
+    fi
+}
+
+function nix-edit() {
+    code ~/dotfiles/home.nix
+}
