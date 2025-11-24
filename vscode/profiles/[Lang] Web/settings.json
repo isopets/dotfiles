@@ -1,15 +1,23 @@
-// 🛑 DO NOT EDIT! Managed by Dotfiles.
 {
   "workbench.iconTheme": "material-icon-theme",
+  "workbench.colorTheme": "GitHub Dark",
   "editor.fontFamily": "'Hack Nerd Font Mono', Menlo, Monaco, 'Courier New', monospace",
   "editor.fontSize": 14,
+  "editor.lineHeight": 1.5,
+  "files.autoSave": "onFocusChange",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.minimap.enabled": false,
+  "editor.accessibilitySupport": "off",
   "gitlens.ai.model": "vscode",
   "chat.mcp.gallery.enabled": true,
   "snyk.advanced.cliPath": "/opt/homebrew/bin/snyk",
   "shellcheck.executablePath": "/opt/homebrew/bin/shellcheck",
-  "files.autoSave": "onFocusChange",
-  "files.associations": {
-    "**/dotfiles/vscode/source/*.json": "jsonc"
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/.vscode": true,
+    "**/__pycache__": true
   },
   "gitlens.currentLine.enabled": true,
   "gitlens.currentLine.style": "grey",

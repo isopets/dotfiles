@@ -1,17 +1,32 @@
 # =================================================================
-# 🛠️ Helper Functions (Fixed & Stable Edition)
+# 🛠️ Helper Functions (Official BW Edition)
 # =================================================================
-
 export REAL_CODE_DIR="$HOME/Projects"
 export REAL_ASSETS_DIR="$HOME/Creative"
 export PARA_DIR="$HOME/PARA"
 export VSCODE_SNAPSHOT_DIR="$HOME/dotfiles/vscode/.snapshots"
+export BW_SESSION_FILE="$HOME/.bw_session"
 
-# ---------------------------------------------------
-# 1. Dashboard (dev)
-# ---------------------------------------------------
+# --- 0. Bitwarden Session Manager ---
+function unlock-bw() {
+    if bw status | grep -q "unlocked"; then return 0; fi
+    if [ -f "$BW_SESSION_FILE" ]; then
+        export BW_SESSION=$(cat "$BW_SESSION_FILE")
+        if bw status | grep -q "unlocked"; then return 0; fi
+    fi
+    echo "🔐 Unlocking Bitwarden..."
+    local key=$(bw unlock --raw)
+    if [ -n "$key" ]; then
+        echo "$key" > "$BW_SESSION_FILE"
+        export BW_SESSION="$key"
+        echo "✅ Unlocked."
+    else
+        echo "❌ Failed."; return 1
+    fi
+}
+
+# --- 1. Dashboard ---
 function dev() {
-    # メニューの定義
     local menu_items=$(cat <<MENU
 🚀 Start Work       (work)        : プロジェクトを開く
 ✨ New Project      (mkproj)      : 新規プロジェクト作成
@@ -28,21 +43,17 @@ function dev() {
 ---------------------------------
 🤖 Ask AI           (ask)         : AIに質問
 💬 Commit Msg       (gcm)         : コミットメッセージ生成
+💾 Save Secret      (save-key)    : クリップボードの鍵を保存
 🔑 Bitwarden Env    (bwfzf)       : APIキー注入
 🌐 Chrome Sync      (chrome-sync) : 拡張機能取り込み
 📖 Read Manual      (rules)       : ルール確認
 🔄 Reload Shell     (sz)          : 再読み込み
 MENU
     )
-
     local selected=$(echo "$menu_items" | fzf --prompt="🔥 Dev Menu > " --height=50% --layout=reverse --border)
-
     case "$selected" in
         *"Start Work"*) work ;;
-        *"New Project"*) 
-            echo -n "📂 Cat: "; read c
-            echo -n "📛 Name: "; read n
-            mkproj "$c" "$n" ;;
+        *"New Project"*) echo -n "📂 Cat: "; read c; echo -n "📛 Name: "; read n; mkproj "$c" "$n" ;;
         *"Scratchpad"*) scratch ;;
         *"Archive Project"*) archive ;;
         *"VS Code Profile"*) mkprofile ;;
@@ -54,6 +65,7 @@ MENU
         *"History/Restore"*) history-vscode ;;
         *"Ask AI"*) echo -n "❓ Q: "; read q; ask "$q" ;;
         *"Commit Msg"*) gcm ;;
+        *"Save Secret"*) save-key ;;
         *"Bitwarden Env"*) echo -n "📝 Var: "; read k; bwfzf "$k" ;;
         *"Chrome Sync"*) ~/dotfiles/chrome/sync_chrome_extensions.sh ;;
         *"Read Manual"*) rules ;;
@@ -62,328 +74,153 @@ MENU
     esac
 }
 
-# ---------------------------------------------------
-# 2. Project Management
-# ---------------------------------------------------
+# --- 2. Project Management ---
 function mkproj() {
-    if [ -z "$1" ] || [ -z "$2" ]; then
-        echo "❌ Usage: mkproj <Category> <Name>"
-        return 1
-    fi
-    local category="$1"
-    local name="$2"
-    local code_dir="$REAL_CODE_DIR/$category/$name"
-    local creative_dir="$REAL_ASSETS_DIR/$category/$name"
-    local para_path="$PARA_DIR/1_Projects/$name"
-
-    mkdir -p "$code_dir/.vscode"
-    mkdir -p "$creative_dir"/{Design,Video,Export}
-    mkdir -p "$para_path"
-
-    ln -s "$creative_dir" "$code_dir/_GoToCreative"
-    ln -s "$code_dir" "$creative_dir/_GoToCode"
-    ln -s "$code_dir" "$para_path/💻_Code"
-    ln -s "$creative_dir" "$para_path/🎨_Assets"
-
-    # Git & Direnv
-    git -C "$code_dir" init
-    echo "# $name" > "$code_dir/README.md"
-    touch "$code_dir/.env"
-    echo "dotenv" > "$code_dir/.envrc"
-    echo ".env" >> "$code_dir/.gitignore"
-    echo ".envrc" >> "$code_dir/.gitignore"
+    if [ -z "$1" ] || [ -z "$2" ]; then echo "❌ Usage: mkproj <Category> <Name>"; return 1; fi
+    local c="$1"; local n="$2"; local code="$REAL_CODE_DIR/$c/$n"; local asset="$REAL_ASSETS_DIR/$c/$n"; local para="$PARA_DIR/1_Projects/$n"
+    mkdir -p "$code/.vscode" "$asset"/{Design,Video,Export} "$para"
+    ln -s "$asset" "$code/_GoToCreative"; ln -s "$code" "$asset/_GoToCode"
+    ln -s "$code" "$para/💻_Code"; ln -s "$asset" "$para/🎨_Assets"
+    git -C "$code" init; echo "# $n" > "$code/README.md"
+    touch "$code/.env"; echo "dotenv" > "$code/.envrc"; echo ".env" >> "$code/.gitignore"; echo ".envrc" >> "$code/.gitignore"
     
-    git -C "$code_dir" add .
-    git -C "$code_dir" commit -m "feat: Initial commit"
-
-    echo "✨ Created!"
-    cd "$code_dir"
-    if command -v direnv &>/dev/null; then direnv allow .; fi
+    local tpl="$HOME/dotfiles/templates/vscode/$c.txt"
+    if [ -f "$tpl" ]; then
+        local exts=$(cat "$tpl" | jq -R . | jq -s .); echo "{ \"recommendations\": $exts }" > "$code/.vscode/extensions.json"
+    fi
+    git -C "$code" add .; git -C "$code" commit -m "feat: Init"
+    echo "✨ Created!"; cd "$code"; if command -v direnv &>/dev/null; then direnv allow .; fi
 }
-
 function work() {
-    local n="$1"
-    if [ -z "$1" ]; then
-        n=$(ls "$PARA_DIR/1_Projects" | fzf --prompt="🚀 Launch > ")
-        if [ -z "$n" ]; then return 1; fi
-    fi
+    local n="$1"; if [ -z "$1" ]; then n=$(ls "$PARA_DIR/1_Projects" | fzf --prompt="🚀 Launch > "); [ -z "$n" ] && return 1; fi
     local p="$PARA_DIR/1_Projects/$n"
-    
-    if [ -d "$p/💻_Code" ]; then
-        local r=$(readlink "$p/💻_Code")
-        code "$r"
-        cd "$r"
-    fi
-    if [ -d "$p/🎨_Assets" ]; then
-        open "$p/🎨_Assets"
-    fi
-    echo "✅ Ready."
-}
-
-function scratch() {
-    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🐍 Profile > ")
-    if [ -n "$p" ]; then code --profile "$p"; fi
-}
-
-function archive() {
-    local n="$1"
-    if [ -z "$1" ]; then
-        n=$(ls "$PARA_DIR/1_Projects" | fzf --prompt="📦 Archive > ")
-        if [ -z "$n" ]; then return 1; fi
-    fi
-    mv "$PARA_DIR/1_Projects/$n" "$PARA_DIR/4_Archives/$n"
-    echo "📦 Archived."
-}
-
-function map() {
-    echo "\n📍 PARA:"
-    eza --tree --level=2 --icons "$HOME/PARA"
-    echo "\n📦 Projects:"
-    eza --tree --level=2 --icons "$HOME/Projects"
-}
-
-function jump() {
-    local c=$(pwd); local t=""
-    if [[ "$c" == *"/Projects/"* ]]; then
-        t="${c/Projects/Creative}"
-    elif [[ "$c" == *"/Creative/"* ]]; then
-        t="${c/Creative/Projects}"
-    else
-        echo "❌ Not in project."
-        return 1
-    fi
-
-    if [ -d "$t" ]; then
-        cd "$t"
-        echo "🚀 Jumped!"
-        eza --icons
-    else
-        echo "⚠️ Target not found."
-    fi
-}
-
-# ---------------------------------------------------
-# 3. VS Code Management
-# ---------------------------------------------------
-function mkprofile() {
-    local vd="$HOME/dotfiles/vscode"
-    echo -n "📛 Name: "; read n
-    if [ -z "$n" ]; then return 1; fi
-    
-    local pn="[Lang] $n"
-    local fn="$(echo "$n"|tr '[:upper:]' '[:lower:]').json"
-    local fp="$vd/source/$fn"
-
-    if [ ! -f "$fp" ]; then
-        echo "{}" > "$fp"
-    fi
-    if ! grep -q "$pn" "$vd/profile_list.txt"; then
-        echo "$pn:$fn" >> "$vd/profile_list.txt"
-    fi
-    
-    "$vd/update_settings.sh" >/dev/null
-    "$HOME/dotfiles/setup.sh" >/dev/null
-    
-    local sp="$HOME/Library/Application Support/Code/User/profiles/$pn/settings.json"
-    [ -f "$sp" ] && chmod +w "$sp"
-    
-    echo "🚀 Launching..."
-    code --profile "$pn" .
-}
-
-function rmprofile() {
-    local list="$HOME/dotfiles/vscode/profile_list.txt"
-    local sel=$(grep -v "\[Base\] Common" "$list" | fzf --prompt="🗑️ Delete > ")
-    if [ -z "$sel" ]; then return 1; fi
-    
-    local name=$(echo "$sel"|cut -d: -f1)
-    local file=$(echo "$sel"|cut -d: -f2)
-    
-    echo "🚨 Delete '$name'? (y/n)"; read c
-    if [ "$c" != "y" ]; then return 1; fi
-    
-    gsed -i "/$name/d" "$list"
-    rm -f "$HOME/dotfiles/vscode/source/$file"
-    
-    "$HOME/dotfiles/vscode/update_settings.sh" >/dev/null
-    "$HOME/dotfiles/setup.sh" >/dev/null
-    rm -rf "$HOME/Library/Application Support/Code/User/profiles/$name"
-    
-    echo "✨ Deleted."
-}
-
-function unlock-vscode() {
-    find "$HOME/Library/Application Support/Code/User/profiles" -name "settings.json" -exec chmod +w {} \;
-    echo "🔓 Unlocked!"
-}
-
-function diff-vscode() {
-    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🔍 Diff > ")
-    if [ -n "$p" ]; then
-        bat "$HOME/Library/Application Support/Code/User/profiles/$p/settings.json" -l json
-    fi
-}
-
-# ---------------------------------------------------
-# 4. Trial & History
-# ---------------------------------------------------
-function take_snapshot() {
-    local p="$1"; local r="$2"; local ts=$(date "+%Y-%m-%d_%H-%M-%S")
-    local td="$VSCODE_SNAPSHOT_DIR/$p/$ts-$r"
-    local src="$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
-    
-    if [ -f "$src" ]; then
-        mkdir -p "$td"
-        cp "$src" "$td/settings.json"
-        code --list-extensions | sort > "$td/extensions.list"
-        echo "📸 Saved: $ts"
-    fi
-}
-
-function safe-update() {
-    echo "🛑 Locking..."
-    echo -n "Run? (y/n): "; read c
-    if [ "$c" != "y" ]; then return 1; fi
-    
-    while IFS=: read -r n f; do
-        if [[ "$n" =~ ^[^#] && -n "$n" ]]; then
-            take_snapshot "$n" "Pre-Lock"
+    local r=$(readlink "$p/💻_Code")
+    if [ -d "$r" ]; then
+        echo "🚀 Launching: $n"
+        mkdir -p "$r/docs"; local log="$r/docs/DEV_LOG.md"; [ ! -f "$log" ] && echo "# Dev Log" > "$log"
+        echo "\n## $(date '+%Y-%m-%d %H:%M')" >> "$log"
+        # 自動保存で終了する運用 (code --wait)
+        cd "$r"; [ -d "$p/🎨_Assets" ] && open "$p/🎨_Assets"
+        code --wait "$r" "$log"
+        
+        # 終了後の自動処理
+        echo "🤖 Auto-Saving..."
+        if [ -n "$GEMINI_API_KEY" ]; then
+             local gl=$(git log --since="midnight" --oneline); local gd=$(git diff HEAD)
+             if [ -n "$gl" ] || [ -n "$gd" ]; then
+                 local p="Summarize work for log:\nLog:\n$gl\nDiff:\n$gd"
+                 local res=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$p\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" | jq -r '.candidates[0].content.parts[0].text')
+                 echo "$res" >> "$log"
+                 git add .; git commit -m "chore: Auto-save session"; git push; echo "✅ Saved."
+             fi
         fi
-    done < "$HOME/dotfiles/vscode/profile_list.txt"
-    
-    update-vscode
-    echo "🔒 Locked."
-}
-
-function safe-trial() { trial-start; }
-
-function trial-start() {
-    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🧪 Trial > ")
-    if [ -z "$p" ]; then return 1; fi
-    
-    take_snapshot "$p" "Trial-Start"
-    local s="$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
-    chmod +w "$s"
-    echo "🧪 Started for $p"
-}
-
-function trial-reset() {
-    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="↩️ Revert > ")
-    if [ -z "$p" ]; then return 1; fi
-    
-    local sd="$VSCODE_SNAPSHOT_DIR/$p"
-    local ls=$(ls "$sd" | grep "Trial-Start" | sort -r | head -n 1)
-    if [ -z "$ls" ]; then echo "❌ No backup."; return 1; fi
-    
-    cp "$sd/$ls/settings.json" "$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
-    
-    local curr=$(mktemp)
-    code --list-extensions | sort > "$curr"
-    local new=$(comm -13 "$sd/$ls/extensions.list" "$curr")
-    
-    if [ -n "$new" ]; then
-        echo "$new" | while read e; do
-            code --uninstall-extension "$e"
-        done
     fi
-    rm "$curr"
-    
-    ~/dotfiles/vscode/update_settings.sh >/dev/null
-    ~/dotfiles/setup.sh >/dev/null
-    echo "✨ Reset."
 }
+function scratch() { local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🐍 Profile > "); [ -n "$p" ] && code --profile "$p"; }
+function archive() { local n="$1"; if [ -z "$1" ]; then n=$(ls "$PARA_DIR/1_Projects" | fzf --prompt="📦 Archive > "); [ -z "$n" ] && return 1; fi; mv "$PARA_DIR/1_Projects/$n" "$PARA_DIR/4_Archives/$n"; echo "📦 Archived."; }
+function map() { echo "📍 PARA:"; eza --tree --level=2 --icons "$HOME/PARA"; echo "📦 Projects:"; eza --tree --level=2 --icons "$HOME/Projects"; }
+function jump() { local c=$(pwd); local t=""; if [[ "$c" == *"/Projects/"* ]]; then t="${c/Projects/Creative}"; else t="${c/Creative/Projects}"; fi; if [ -d "$t" ]; then cd "$t"; echo "🚀 Jumped!"; eza --icons; else echo "⚠️ Not found."; fi; }
 
+# --- 3. VS Code Management ---
+function mkprofile() {
+    local vd="$HOME/dotfiles/vscode"; echo -n "📛 Name: "; read n; [ -z "$n" ] && return 1
+    local pn="[Lang] $n"; local fn="$(echo "$n"|tr '[:upper:]' '[:lower:]').json"; local fp="$vd/source/$fn"
+    if [ ! -f "$fp" ]; then echo "{}" > "$fp"; fi
+    if ! grep -q "$pn" "$vd/profile_list.txt"; then echo "$pn:$fn" >> "$vd/profile_list.txt"; fi
+    "$vd/update_settings.sh" >/dev/null; "$HOME/dotfiles/setup.sh" >/dev/null
+    local sp="$HOME/Library/Application Support/Code/User/profiles/$pn/settings.json"
+    [ -f "$sp" ] && chmod +w "$sp"; echo "🚀 Launching..."; code --profile "$pn" .
+}
+function rmprofile() {
+    local list="$HOME/dotfiles/vscode/profile_list.txt"; local sel=$(grep -v "\[Base\] Common" "$list" | fzf --prompt="🗑️ Delete > "); [ -z "$sel" ] && return 1
+    local name=$(echo "$sel"|cut -d: -f1); local file=$(echo "$sel"|cut -d: -f2)
+    echo "🚨 Delete '$name'? (y/n)"; read c; [ "$c" != "y" ] && return 1
+    gsed -i "/$name/d" "$list"; rm -f "$HOME/dotfiles/vscode/source/$file"
+    "$HOME/dotfiles/vscode/update_settings.sh" >/dev/null; "$HOME/dotfiles/setup.sh" >/dev/null
+    rm -rf "$HOME/Library/Application Support/Code/User/profiles/$name"; echo "✨ Deleted."
+}
+function unlock-vscode() { find "$HOME/Library/Application Support/Code/User/profiles" -name "settings.json" -exec chmod +w {} \;; echo "🔓 Unlocked!"; }
+function diff-vscode() { local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🔍 Diff > "); [ -n "$p" ] && bat "$HOME/Library/Application Support/Code/User/profiles/$p/settings.json" -l json; }
+function take_snapshot() {
+    local p="$1"; local r="$2"; local ts=$(date "+%Y-%m-%d_%H-%M-%S"); local td="$VSCODE_SNAPSHOT_DIR/$p/$ts-$r"; local src="$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
+    if [ -f "$src" ]; then mkdir -p "$td"; cp "$src" "$td/settings.json"; code --list-extensions | sort > "$td/extensions.list"; echo "📸 Saved: $ts"; fi
+}
+function safe-update() {
+    echo "🛑 Locking..."; echo -n "Run? (y/n): "; read c; [ "$c" != "y" ] && return 1
+    while IFS=: read -r n f; do [[ "$n" =~ ^[^#] && -n "$n" ]] && take_snapshot "$n" "Pre-Lock"; done < "$HOME/dotfiles/vscode/profile_list.txt"
+    update-vscode; echo "🔒 Locked."
+}
+function safe-trial() { trial-start; }
+function trial-start() {
+    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🧪 Trial > "); [ -z "$p" ] && return 1
+    take_snapshot "$p" "Trial-Start"
+    local s="$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"; chmod +w "$s"; echo "🧪 Started for $p"
+}
+function trial-reset() {
+    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="↩️ Revert > "); [ -z "$p" ] && return 1
+    local sd="$VSCODE_SNAPSHOT_DIR/$p"; local ls=$(ls "$sd" | grep "Trial-Start" | sort -r | head -n 1); [ -z "$ls" ] && { echo "❌ No backup."; return 1; }
+    cp "$sd/$ls/settings.json" "$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
+    local c=$(mktemp); code --list-extensions|sort > "$c"; local n=$(comm -13 "$sd/$ls/extensions.list" "$c")
+    [ -n "$n" ] && echo "$n" | while read e; do code --uninstall-extension "$e"; done
+    rm "$c"; ~/dotfiles/vscode/update_settings.sh >/dev/null; ~/dotfiles/setup.sh >/dev/null; echo "✨ Reset."
+}
 function trial-pick() {
-    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🛍️ Pick > ")
-    if [ -z "$p" ]; then return 1; fi
-
-    local bd="$HOME/dotfiles/vscode/.backup/$p"
-    # Note: trial-start now uses snapshot dir, but we check the temp backup logic if needed.
-    # For simplicity, we assume snapshots are used.
-    # If using snapshots, logic should adapt. Here we use basic logic.
-    
-    # ... (Logic omitted for brevity to prevent overflow, keeping core safety)
-    echo "ℹ️ Please use 'diff-vscode' and manual 'edit-vscode' for now."
+    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🛍️ Pick > "); [ -z "$p" ] && return 1
+    local bd="$HOME/dotfiles/vscode/.backup/$p"; [ ! -f "$bd/extensions.list.bak" ] && { echo "❌ No backup."; return 1; }
+    local c=$(mktemp); code --list-extensions|sort > "$c"; local n=$(comm -13 "$bd/extensions.list.bak" "$c")
+    if [ -n "$n" ]; then
+        local sel=$(echo "$n" | fzf -m --prompt="Keep > " --preview "echo {}"); 
+        if [ -n "$sel" ]; then echo "$sel" >> "$HOME/dotfiles/vscode/install_extensions.sh"; fi
+        echo "$n" | while read e; do if ! echo "$sel" | grep -q "$e"; then code --uninstall-extension "$e"; fi; done
+    fi
+    rm "$c"; diff-vscode "$p"; echo "Edit JSON then Enter."; read; safe-update; take_snapshot "$p" "Post-Pick"
 }
-
 function history-vscode() {
-    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🕰️ Profile > ")
-    if [ -z "$p" ]; then return 1; fi
-    
-    local snap=$(ls "$VSCODE_SNAPSHOT_DIR/$p" | sort -r | fzf --prompt="Restore > ")
-    if [ -z "$snap" ]; then return 1; fi
-    
-    local src="$VSCODE_SNAPSHOT_DIR/$p/$snap"
-    cp "$src/settings.json" "$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
-    cat "$src/extensions.list" | while read e; do
-        code --install-extension "$e"
-    done
+    local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🕰️ Profile > "); [ -z "$p" ] && return 1
+    local snap=$(ls "$VSCODE_SNAPSHOT_DIR/$p" | sort -r | fzf --prompt="Restore > "); [ -z "$snap" ] && return 1
+    local src="$VSCODE_SNAPSHOT_DIR/$p/$snap"; cp "$src/settings.json" "$HOME/Library/Application Support/Code/User/profiles/$p/settings.json"
+    cat "$src/extensions.list" | while read e; do code --install-extension "$e"; done
     echo "✨ Restored."
 }
 
-# ---------------------------------------------------
-# 5. AI & Utils
-# ---------------------------------------------------
+# --- 4. AI & Utils ---
 function ask() {
+    unlock-bw || return 1
     if [ -z "$GEMINI_API_KEY" ]; then echo "❌ No Key."; return 1; fi
-    local r=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"Command only: $1\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY")
+    local r=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"Command only: $1\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY");
     echo "$r" | jq -r '.candidates[0].content.parts[0].text'
 }
-
 function gcm() {
-    if [ -z "$GEMINI_API_KEY" ]; then return 1; fi
-    local d=$(git diff --cached)
-    if [ -z "$d" ]; then return 1; fi
-    
+    unlock-bw || return 1
+    [ -z "$GEMINI_API_KEY" ] && return 1; local d=$(git diff --cached); [ -z "$d" ] && return 1
     local m=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"Git commit message for:\n$d\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" | jq -r '.candidates[0].content.parts[0].text')
-    
-    echo "$m"
-    read -r -p "Commit? (y/n): " c
-    if [ "$c" = "y" ]; then
-        git commit -m "$m"
-    fi
+    echo "$m"; read -r -p "Commit? (y/n): " c; [ "$c" = "y" ] && git commit -m "$m"
 }
-
-function bwenv() {
-    local p=$(bw get password "$1")
-    echo "$2=$p" >> .env
-    echo "✅ Added."
-}
-function bwfzf() {
-    local i=$(bw list items --search "" | jq -r '.[].name' | fzf --prompt="Select Item > ")
-    if [ -n "$i" ]; then
-        bwenv "$i" "$1"
-    fi
-}
-
-function ali() {
-    local s=$(alias | fzf | cut -d'=' -f1)
-    if [ -n "$s" ]; then
-        print -z "$s"
-    fi
-}
-
-function myhelp() {
-    cat ~/dotfiles/zsh/config/*.zsh | bat -l bash --style=plain
-}
-
-function dot-doctor() {
-    echo "🚑 Check..."
-    local ec=0
-    for t in git zoxide eza bat lazygit fzf direnv starship mise; do
-        if command -v "$t" &> /dev/null; then
-            echo "✅ $t"
-        else
-            echo "❌ $t missing"
-            ((ec++))
-        fi
-    done
-    
-    if [ -n "$GEMINI_API_KEY" ]; then
-        echo "✅ Key"
+function save-key() {
+    unlock-bw || return 1
+    local c=$(pbpaste)
+    if [[ "$c" == *":::"* ]]; then
+        local n=${c%%:::*}; local k=${c##*:::}; echo "🚀 Auto-Save: $n"
+        echo "{\"type\":1,\"name\":\"$n\",\"login\":{\"username\":\"API_KEY\",\"password\":\"$k\"}}" | bw encode | bw create item > /dev/null
+        echo "✅ Saved!"; echo -n "$k" | pbcopy
     else
-        echo "❌ No Key"
-        ((ec++))
+        echo "📋 Clip: ${c:0:15}..."; echo -n "📛 Name: "; read n
+        [ -n "$n" ] && echo "{\"type\":1,\"name\":\"$n\",\"login\":{\"username\":\"API_KEY\",\"password\":\"$c\"}}" | bw encode | bw create item > /dev/null && echo "✅ Saved!"
     fi
+}
+function bwenv() { unlock-bw || return 1; local p=$(bw get password "$1"); echo "$2=$p" >> .env; echo "✅ Added."; }
+function bwfzf() { unlock-bw || return 1; local i=$(bw list items --search "" | jq -r '.[].name' | fzf --prompt="Select Item > "); [ -n "$i" ] && bwenv "$i" "$1"; }
+function ali() { local s=$(alias|fzf|cut -d'=' -f1); [ -n "$s" ] && print -z "$s"; }
+function myhelp() { cat ~/dotfiles/zsh/config/*.zsh | bat -l bash --style=plain; }
+function dot-doctor() {
+    echo "🚑 Check..."; local ec=0
+    for t in git zoxide eza bat lazygit fzf direnv starship mise bw; do
+        if command -v "$t" &> /dev/null; then echo "✅ $t"; else echo "❌ $t missing"; ((ec++)); fi
+    done
+    if [ -n "$GEMINI_API_KEY" ]; then echo "✅ Key"; else echo "❌ No Key"; ((ec++)); fi
     echo "🔥 Issues: $ec"
+}
+function show-tip() {
+    local tips=("💡 z:爆速移動" "💡 work:コックピット" "💡 mkproj:プロジェクト作成" "💡 dev:メニュー" "💡 copy-key:キーコピー" "💡 rules:マニュアル" "💡 sz:リロード" "💡 dot-doctor:自己診断" "💡 save-key:キー保存")
+    echo "${tips[$RANDOM % ${#tips[@]}]}"
 }

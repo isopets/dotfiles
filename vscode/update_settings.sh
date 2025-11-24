@@ -8,7 +8,6 @@ while IFS=: read -r name diff; do
     odir="$DEST/$name"; mkdir -p "$odir"; ofile="$odir/settings.json"
     [ -f "$ofile" ] && chmod +w "$ofile"
     if [ "$diff" != "none" ] && [ -f "$SRC/$diff" ]; then jq -s '.[0] * .[1]' <(clean_json "$COMMON") <(clean_json "$SRC/$diff") > "$ofile"; else clean_json "$COMMON" > "$ofile"; fi
-    temp=$(mktemp); echo "// 🛑 DO NOT EDIT! Managed by Dotfiles." > "$temp"; cat "$ofile" >> "$temp" && mv "$temp" "$ofile"
     chmod a-w "$ofile"
 done < "$LIST"
 echo "✅ Built & Locked."
