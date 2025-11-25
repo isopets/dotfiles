@@ -1,0 +1,63 @@
+# ==========================================
+# 🌌 Starship Preset (External File)
+# ==========================================
+
+add_newline = true
+command_timeout = 1000
+
+format = """
+$os\
+$directory\
+$git_branch\
+$git_status\
+$custom\
+$cmd_duration\
+$line_break\
+$character"""
+
+[os]
+disabled = false
+style = "bold blue"
+format = "[$symbol]($style) "
+
+[os.symbols]
+Macos = "🍎"
+Linux = "🐧"
+
+[directory]
+style = "bold cyan"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 🔒"
+
+[git_branch]
+symbol = "🌱 "
+style = "bold green"
+
+[git_status]
+style = "bold yellow"
+conflicted = "🏳"
+ahead = "🏎💨"
+behind = "🐢"
+diverged = "🔀"
+up_to_date = ""
+untracked = "🤷"
+stashed = "📦"
+modified = "📝"
+
+[cmd_duration]
+min_time = 2000
+format = " ⏱ [$duration]($style)"
+style = "yellow"
+
+# --- カスタム通知 (Trial Mode) ---
+[custom.vscode_trial]
+command = "echo ' 🧪 TRIAL MODE'"
+when = "test -w \"$HOME/dotfiles/vscode/profiles/[Base] Common/settings.json\""
+style = "bg:#ff4b4b fg:#ffffff bold"
+format = "[$symbol $output]($style)"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vicmd_symbol = "[❮](bold yellow)"
