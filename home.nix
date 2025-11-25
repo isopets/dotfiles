@@ -6,7 +6,7 @@
   home.username = "isogaiyuto";
   home.homeDirectory = "/Users/isogaiyuto";
   
-  # ★重要: 衝突時の自動バックアップを有効化
+  # ★重要: これを使うために 24.05 が必要
   home.backupFileExtension = "backup";
 
   # クラッシュ回避
@@ -18,18 +18,18 @@
     jq gnused ripgrep fd gnupg
     snyk trivy
     (nerdfonts.override { fonts = [ "Hack" ]; })
-    gum # UIツール
+    gum
   ];
 
   # フォント設定
   fonts.fontconfig.enable = true;
 
-  # Zsh設定 (ここに .zshrc の中身を記述する！)
+  # Zsh設定 (Nixで生成)
   programs.zsh = {
     enable = true;
     enableCompletion = true;
     
-    # .zshrc の末尾に追加される内容
+    # .zshrc の末尾に追加される内容 (コックピット機能の読み込み)
     initExtra = ''
       # --- 1. パス設定 ---
       export PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$PATH"
@@ -39,7 +39,7 @@
       # --- 2. 秘密情報の読み込み ---
       [ -f "$HOME/dotfiles/zsh/.zsh_secrets" ] && source "$HOME/dotfiles/zsh/.zsh_secrets"
 
-      # --- 3. カスタム関数の読み込み (dotfiles内のファイルをロード) ---
+      # --- 3. カスタム関数の読み込み ---
       if [ -d "$HOME/dotfiles/zsh/config" ]; then
         for f in "$HOME/dotfiles/zsh/config/"*.zsh; do
           source "$f"
@@ -59,5 +59,6 @@
     userEmail = "jandp.0717@gmail.com";
   };
 
+  # ★重要: バージョンを 24.05 に指定
   home.stateVersion = "24.05";
 }
