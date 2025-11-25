@@ -1,5 +1,5 @@
 {
-  description = "Dotfiles (Nix)";
+  description = "Cockpit Environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
