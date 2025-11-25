@@ -5,25 +5,59 @@
   home.enableNixpkgsReleaseCheck = false;
   home.username = "isogaiyuto";
   home.homeDirectory = "/Users/isogaiyuto";
+  
+  # ★重要: 衝突時の自動バックアップを有効化
+  home.backupFileExtension = "backup";
 
   # クラッシュ回避
   services.kdeconnect.enable = false;
 
-  # パッケージリスト (miseは24.05で使えるため復活)
+  # パッケージリスト
   home.packages = with pkgs; [
-    eza bat lazygit fzf direnv jq snyk gnupg mise
+    eza bat lazygit fzf direnv starship mise
+    jq gnused ripgrep fd gnupg
+    snyk trivy
     (nerdfonts.override { fonts = [ "Hack" ]; })
+    gum # UIツール
   ];
 
-  # Zsh設定
+  # フォント設定
+  fonts.fontconfig.enable = true;
+
+  # Zsh設定 (ここに .zshrc の中身を記述する！)
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    initExtra = "source ~/dotfiles/zsh/.zshrc"; 
-  };
-  
-  programs.git.enable = true;
+    
+    # .zshrc の末尾に追加される内容
+    initExtra = ''
+      # --- 1. パス設定 ---
+      export PATH="$HOME/.nix-profile/bin:/opt/homebrew/bin:$PATH"
+      export GOPATH="$HOME/go"
+      export PATH="$GOPATH/bin:$PATH"
 
-  # バージョンを 24.05 に上げる
+      # --- 2. 秘密情報の読み込み ---
+      [ -f "$HOME/dotfiles/zsh/.zsh_secrets" ] && source "$HOME/dotfiles/zsh/.zsh_secrets"
+
+      # --- 3. カスタム関数の読み込み (dotfiles内のファイルをロード) ---
+      if [ -d "$HOME/dotfiles/zsh/config" ]; then
+        for f in "$HOME/dotfiles/zsh/config/"*.zsh; do
+          source "$f"
+        done
+      fi
+
+      # --- 4. 起動時チェック ---
+      if command -v show-tip > /dev/null; then
+          show-tip
+      fi
+    '';
+  };
+
+  programs.git = {
+    enable = true;
+    userName = "isopets";
+    userEmail = "jandp.0717@gmail.com";
+  };
+
   home.stateVersion = "24.05";
 }
