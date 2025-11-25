@@ -4,7 +4,9 @@
   home.enableNixpkgsReleaseCheck = false;
   home.username = "isogaiyuto";
   home.homeDirectory = "/Users/isogaiyuto";
-  home.backupFileExtension = "backup";
+
+  # ★削除: home.backupFileExtension = "backup"; (手動退避したので不要)
+
   services.kdeconnect.enable = false;
   
   home.packages = with pkgs; [
