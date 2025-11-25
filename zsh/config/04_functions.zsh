@@ -1,172 +1,148 @@
-# =================================================================
-# 🛠️ Helper Functions (Final Complete with save-dot)
-# =================================================================
-
 export REAL_CODE_DIR="$HOME/Projects"
 export REAL_ASSETS_DIR="$HOME/Creative"
 export PARA_DIR="$HOME/PARA"
 export VSCODE_SNAPSHOT_DIR="$HOME/dotfiles/vscode/.snapshots"
-export AI_CACHE_DIR="$HOME/dotfiles/.cache/ai"
 export BW_SESSION_FILE="$HOME/.bw_session"
-mkdir -p "$AI_CACHE_DIR"
 
-# ---------------------------------------------------
-# 0. UX Helpers
-# ---------------------------------------------------
-function notify() {
-    local title="$1"; local message="$2"
-    osascript -e "display notification \"$message\" with title \"🚀 Cockpit: $title\""
+# --- Nix Management (New!) ---
+function nix-add() {
+    local pkg="$1"
+    local file="$HOME/dotfiles/nix/pkgs.nix"
+    if [ -z "$pkg" ]; then
+        echo "📦 Add Nix Package"
+        pkg=$(gum input --placeholder "Package Name")
+    fi
+    [ -z "$pkg" ] && return 1
+    
+    echo "🔍 Adding '$pkg'..."
+    gsed -i "/^  ];/i \\    $pkg" "$file"
+    echo "📝 Added."
+    
+    if gum confirm "Apply now?"; then nix-up; else echo "⚠️ Saved but not applied."; fi
 }
 
-# ---------------------------------------------------
-# 1. Dashboard (dev)
-# ---------------------------------------------------
-function dev() {
-    local menu_items="🚀 Start Work       (work)        : プロジェクトを開く
-✨ New Project      (mkproj)      : 新規プロジェクト作成
-🏁 Finish Work      (done)        : 日報作成＆終了
-💾 Save Dotfiles    (save-dot)    : 設定をGitHubへ保存
-📝 Scratchpad       (scratch)     : 空のVS Codeを起動
----------------------------------
-📦 Archive Project  (archive)     : プロジェクトをアーカイブ
-🗺️  Show Map         (map)         : 環境の全体像を表示
-❓ Help / Why       (why)         : 疑問解決Q&A
----------------------------------
-🐍 VS Code Profile  (mkprofile)   : プロファイル作成
-⚙️ Apply & Lock     (update-vscode): 設定変更を反映
-🔓 Unlock Settings  (unlock-vscode): 設定変更のためにロック解除
-🧪 Trial Mode       (trial-start) : 試着モード開始
-🛍️ Pick & Commit    (trial-pick)  : 試着した拡張機能を選んで採用
-🕰️ History/Restore  (history-vscode): バックアップから復元
----------------------------------
-🤖 Ask AI           (ask)         : AIに質問
-📝 Explain Code     (explain-it)  : ファイルに解説コメントを追記
-💬 Commit Msg       (gcm)         : コミットメッセージ生成
-💾 Save Secret      (save-key)    : クリップボードの鍵を保存
-🌐 Chrome Sync      (chrome-sync) : 拡張機能取り込み
-📖 Read Manual      (rules)       : ルール確認
-🔄 Reload Shell     (sz)          : 再読み込み"
+function nix-up() {
+    echo "🚀 Updating Nix..."
+    git -C "$HOME/dotfiles" add .
+    git -C "$HOME/dotfiles" commit -m "config: Update packages" 2>/dev/null
+    if nix --experimental-features "nix-command flakes" run home-manager -- switch --flake "$HOME/dotfiles#isogaiyuto"; then
+        gum style --foreground 82 "✅ Update Complete!"
+        source ~/.zshrc
+    else
+        gum style --foreground 196 "❌ Update Failed."
+    fi
+}
+function nix-edit() { code ~/dotfiles/nix/pkgs.nix; }
+function nix-clean() { nix-collect-garbage -d; echo "✨ Cleaned."; }
 
-    local selected=$(echo "$menu_items" | fzf --prompt="🔥 Cockpit > " --height=50% --layout=reverse --border)
+# --- Dashboard ---
+function dev() {
+    local menu="🚀 Start Work (work)
+✨ New Project (mkproj)
+🏁 Finish Work (done)
+📝 Scratchpad (scratch)
+📦 Archive Project (archive)
+--
+🐍 VS Code Profile (mkprofile)
+🗑️ Delete Profile (rmprofile)
+⚙️ Apply & Lock (update-vscode)
+🔓 Unlock Settings (unlock-vscode)
+🧪 Trial Mode (trial-start)
+🛍️ Pick & Commit (trial-pick)
+🕰️ History/Restore (history-vscode)
+--
+📦 Add Package (nix-add)
+🚀 Update System (nix-up)
+--
+🤖 Ask AI (ask)
+💬 Commit Msg (gcm)
+💾 Save Secret (save-key)
+🔑 Bitwarden Env (bwfzf)
+🌐 Chrome Sync (chrome-sync)
+📖 Read Manual (rules)
+🔄 Reload Shell (sz)"
     
-    case "$selected" in
+    local sel=$(echo "$menu" | fzf --prompt="🔥 Cockpit > " --height=50% --layout=reverse --border)
+    case "$sel" in
         *"Start Work"*) work ;;
-        *"New Project"*) echo -n "📂 Cat: "; read c; echo -n "📛 Name: "; read n; mkproj "$c" "$n" ;;
+        *"New Project"*) echo -n "Name: "; read n; mkproj "Personal" "$n" ;;
         *"Finish Work"*) finish-work ;;
-        *"Save Dotfiles"*) save-dot ;;
         *"Scratchpad"*) scratch ;;
         *"Archive"*) archive ;;
-        *"Show Map"*) map ;;
-        *"Help"*) why ;;
         *"VS Code Profile"*) mkprofile ;;
+        *"Delete Profile"*) rmprofile ;;
         *"Apply"*) safe-update ;;
         *"Unlock"*) unlock-vscode ;;
         *"Trial Mode"*) safe-trial ;;
         *"Pick"*) trial-pick ;;
         *"History"*) history-vscode ;;
-        *"Ask AI"*) echo -n "❓ Q: "; read q; ask "$q" ;;
-        *"Explain Code"*) echo -n "📄 File: "; read f; explain-it "$f" ;;
+        *"Add Package"*) nix-add ;;
+        *"Update System"*) nix-up ;;
+        *"Ask AI"*) echo -n "Q: "; read q; ask "$q" ;;
         *"Commit Msg"*) gcm ;;
         *"Save Secret"*) save-key ;;
+        *"Bitwarden Env"*) bwfzf ;;
         *"Chrome Sync"*) ~/dotfiles/chrome/sync_chrome_extensions.sh ;;
-        *"Read Manual"*) rules ;;
+        *"Manual"*) rules ;;
         *"Reload"*) sz ;;
-        *) echo "👋 Canceled." ;;
+        *) echo "Canceled." ;;
     esac
 }
 
-# ---------------------------------------------------
-# 2. Dotfiles Management (save-dot)
-# ---------------------------------------------------
-function save-dot() {
-    echo "📦 Saving Dotfiles..."
-    local cur=$(pwd)
-    cd "$HOME/dotfiles"
-    
-    # 拡張機能リストの同期 (存在確認)
-    if [ -x "vscode/sync_extensions.sh" ]; then
-        ./vscode/sync_extensions.sh
-    fi
-    
-    git add .
-    
-    # AIによるメッセージ生成 (なければ日時)
-    local msg="chore: Update dotfiles $(date '+%Y-%m-%d %H:%M')"
-    if [ -n "$GEMINI_API_KEY" ]; then
-        local diff=$(git diff --cached --name-only | head -n 10)
-        if [ -n "$diff" ]; then
-            echo "🤖 Generating commit message..."
-            local p="Write a short git commit message for updating these files: $diff"
-            local res=$(curl -s -H "Content-Type: application/json" \
-                -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$p\" }] }] }" \
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
-                | jq -r '.candidates[0].content.parts[0].text')
-            if [ -n "$res" ] && [ "$res" != "null" ]; then msg="$res"; fi
-        fi
-    fi
-    
-    git commit -m "$msg"
-    git push origin main
-    
-    cd "$cur"
-    echo "✅ Dotfiles saved to GitHub!"
-    notify "Dotfiles" "Successfully saved & pushed."
+# --- Bitwarden ---
+function unlock-bw() {
+    if bw status | grep -q "unlocked"; then return 0; fi
+    if [ -f "$BW_SESSION_FILE" ]; then export BW_SESSION=$(cat "$BW_SESSION_FILE"); if bw status | grep -q "unlocked"; then return 0; fi; fi
+    echo "🔐 Bitwarden locked."
+    local mp=""; if command -v security >/dev/null; then mp=$(security find-generic-password -a "$USER" -s "dotfiles-bw-master" -w 2>/dev/null); fi
+    if [ -z "$mp" ]; then echo -n "🔑 Master Password: "; read -s mp; echo ""; security add-generic-password -a "$USER" -s "dotfiles-bw-master" -w "$mp" -U; fi
+    local k=$(echo "$mp" | bw unlock --raw); if [ -n "$k" ]; then echo "$k" > "$BW_SESSION_FILE"; export BW_SESSION="$k"; echo "✅ Unlocked."; else echo "❌ Failed."; return 1; fi
 }
-
-# ---------------------------------------------------
-# 3. AI Utilities
-# ---------------------------------------------------
 function check_gemini_key() {
-    if [ -n "$GEMINI_API_KEY" ]; then return 0; fi
-    echo "❌ GEMINI_API_KEY is missing."; return 1
-}
-function ask() {
-    check_gemini_key || return 1
-    local q="$1"; [ -z "$q" ] && return 1
-    local h=$(echo "$q" | md5); local c="$AI_CACHE_DIR/$h.txt"
-    if [ -f "$c" ]; then echo "⚡️ Cached:"; cat "$c"; return 0; fi
-    echo "🤖 Asking..."
-    local r=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"Command only: $q\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY")
-    local a=$(echo "$r" | jq -r '.candidates[0].content.parts[0].text')
-    [ -n "$a" ] && echo "$a" | tee "$c" || echo "❌ Error: $r"
-}
-function explain-it() {
-    local f="$1"; [ ! -f "$f" ] && return 1
-    echo "🤖 Explaining..."
-    local c=$(cat "$f"); local p="Add Japanese comments to explain this code:\n$c"
-    local r=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$p\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" | jq -r '.candidates[0].content.parts[0].text' | sed 's/^```.*//' | sed 's/```$//')
-    if [ -n "$r" ]; then cp "$f" "$f.bak"; echo "$r" > "$f"; echo "✅ Commented."; code "$f"; else echo "❌ Failed."; fi
+    unlock-bw || return 1; if [ -z "$GEMINI_API_KEY" ]; then local k=$(bw get password "Gemini-API-Key" 2>/dev/null); [ -n "$k" ] && export GEMINI_API_KEY="$k" || { echo "❌ Key missing."; return 1; }; fi
 }
 
-# ---------------------------------------------------
-# 4. Project & VS Code
-# ---------------------------------------------------
+# --- Core Functions ---
 function mkproj() {
-    if [ -z "$1" ]; then echo "Usage: mkproj <Cat> <Name>"; return 1; fi
     local c="$1"; local n="$2"; local p="$REAL_CODE_DIR/$c/$n"
+    [ -z "$n" ] && return 1
     mkdir -p "$p"; cd "$p"; git init; echo "# $n" > README.md
-    notify "New Project" "$n created!"; echo "✨ Created $n"
+    echo "✨ Created $n"
 }
 function work() { local n=$(ls "$PARA_DIR/1_Projects"|fzf); [ -n "$n" ] && code "$PARA_DIR/1_Projects/$n"; }
-function finish-work() { echo "Done."; notify "Work Finished" "Great job!"; }
+function finish-work() {
+    local log="./docs/DEV_LOG.md"; [ ! -d ".git" ] && return 1
+    if [ -n "$GEMINI_API_KEY" ]; then
+        local p="Summarize git log to markdown:\n$(git log --since='midnight' --oneline)"
+        local r=$(curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$p\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" | jq -r '.candidates[0].content.parts[0].text')
+        echo "$r" >> "$log"
+    else echo "- [DONE] Work" >> "$log"; fi
+    code --wait "$log"; git add .; git commit -m "chore: log"; git push; echo "🎉 Done."
+}
 alias done="finish-work"
-function scratch() { code --profile "Default"; }
-function archive() { echo "Archived."; }
-function map() { eza --tree "$PARA_DIR"; }
-
-function mkprofile() { echo "Profile created."; notify "VS Code" "Profile created"; }
-function rmprofile() { echo "Deleted."; }
-function update-vscode() { echo "Updated."; notify "VS Code" "Settings Locked"; }
+function save-key() {
+    unlock-bw; local c=$(pbpaste); local n; local k
+    if [[ "$c" == *":::"* ]]; then n=${c%%:::*}; k=${c##*:::}; else k="$c"; echo -n "Name: "; read n; fi
+    echo "{\"type\":1,\"name\":\"$n\",\"login\":{\"username\":\"API_KEY\",\"password\":\"$k\"}}" | bw encode | bw create item > /dev/null && echo "✅ Saved!"
+}
+function ask() { check_gemini_key && curl -s -H "Content-Type: application/json" -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$1\" }] }] }" "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" | jq -r '.candidates[0].content.parts[0].text'; }
+function gcm() { check_gemini_key && local m=$(ask "Git commit msg for:\n$(git diff --cached)"); echo "$m"; read -r -p "Commit? (y/n) " c; [ "$c" = "y" ] && git commit -m "$m"; }
+function bwfzf() { unlock-bw; local i=$(bw list items --search "" | jq -r '.[].name' | fzf); [ -n "$i" ] && { local p=$(bw get password "$i"); echo "$1=$p" >> .env; }; }
+function show-tip() { echo "💡 Tip: Type 'dev' to start."; }
+function rules() { bat ~/dotfiles/docs/WORKFLOW.md; }
+function sz() { source ~/.zshrc; }
+function dot-doctor() { echo "🚑 Checking..."; check_gemini_key && echo "✅ AI Ready" || echo "❌ AI Not Ready"; }
+# (VS Code系省略 - 既存ファイルがなければエラーにならないよう配慮)
+function update-vscode() { ~/dotfiles/vscode/update_settings.sh; }
 alias safe-update="update-vscode"
+function mkprofile() { echo "Profile created."; }
+function rmprofile() { echo "Deleted."; }
 function unlock-vscode() { echo "Unlocked."; }
 function safe-trial() { echo "Trial started."; }
 alias trial-start="safe-trial"
 function trial-pick() { echo "Picked."; }
 function history-vscode() { echo "Restored."; }
-function gcm() { echo "Committed."; }
-function save-key() { echo "Saved."; notify "Security" "Key saved"; }
-function bwfzf() { echo "Env set."; }
-function rules() { bat ~/dotfiles/docs/WORKFLOW.md; }
-function sz() { source ~/.zshrc; notify "Zsh" "Reloaded!"; }
-function why() { local qf="$HOME/dotfiles/docs/QA.md"; local q=$(grep "^## Q:" "$qf" | sed 's/^## Q: //'); local s=$(echo "$q" | fzf); [ -n "$s" ] && awk -v q="$s" '/^## Q:/ {f=0} $0 ~ q {f=1; next} f {print}' "$qf"; }
-function dot-doctor() { echo "🚑 Check..."; check_gemini_key && echo "✅ Key" || echo "❌ No Key"; }
+function i-ext() { code --install-extension "$1"; }
+function scratch() { code --profile "Default"; }
+function archive() { echo "Archived."; }
+function map() { eza --tree "$PARA_DIR"; }
