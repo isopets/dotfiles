@@ -1,5 +1,5 @@
 # =================================================================
-# 🚀 My Dotfiles .zshrc (Loader)
+# 🚀 My Dotfiles .zshrc (Stable Loader)
 # =================================================================
 
 # 1. 秘密情報の読み込み
@@ -7,50 +7,48 @@ if [ -f "$HOME/dotfiles/zsh/.zsh_secrets" ]; then
     source "$HOME/dotfiles/zsh/.zsh_secrets"
 fi
 
-# 2. 設定ディレクトリの定義
+# 2. 設定ディレクトリ定義
 ZSH_CONFIG_DIR="$HOME/dotfiles/zsh/config"
 
-# 3. 拡張機能の自動同期 (1日1回 バックグラウンド実行)
-VSCODE_SYNC_SCRIPT="$HOME/dotfiles/vscode/sync_extensions.sh"
-LAST_SYNC_FILE="$HOME/.vscode_last_sync"
+# 3. 拡張機能の自動同期 (1日1回)
+VSCODE_SYNC="$HOME/dotfiles/vscode/sync_extensions.sh"
+LAST_SYNC="$HOME/.vscode_last_sync"
+NOW=$(date +%s)
 
-if [ -f "$LAST_SYNC_FILE" ]; then
-    # 現在時刻と最終実行時刻の差分を計算
-    NOW=$(date +%s)
-    LAST=$(cat "$LAST_SYNC_FILE")
-    DIFF=$((NOW - LAST))
-    
-    # 24時間(86400秒)経過していたら実行
-    if [ "$DIFF" -gt 86400 ]; then
-        nohup "$VSCODE_SYNC_SCRIPT" > /dev/null 2>&1 &!
-        date +%s > "$LAST_SYNC_FILE"
-    fi
+if [ -f "$LAST_SYNC" ]; then
+    LAST=$(cat "$LAST_SYNC")
 else
-    # 初回実行
-    nohup "$VSCODE_SYNC_SCRIPT" > /dev/null 2>&1 &!
-    date +%s > "$LAST_SYNC_FILE"
+    LAST=0
+fi
+
+if [ $((NOW - LAST)) -gt 86400 ]; then
+    if [ -x "$VSCODE_SYNC" ]; then
+        nohup "$VSCODE_SYNC" >/dev/null 2>&1 &!
+        echo "$NOW" > "$LAST_SYNC"
+    fi
 fi
 
 # 4. 設定ファイルの読み込み
 if [ -d "$ZSH_CONFIG_DIR" ]; then
-    for file in "$ZSH_CONFIG_DIR"/*.zsh; do
-        source "$file"
+    for f in "$ZSH_CONFIG_DIR"/*.zsh; do
+        [ -r "$f" ] && source "$f"
     done
 fi
 
-# 5. 未コミットの警告
-if command -v git > /dev/null 2>&1; then
+# 5. 起動時チェック
+if command -v git &> /dev/null; then
     if [[ -n $(git -C "$HOME/dotfiles" status --porcelain 2>/dev/null) ]]; then
         echo "🚨 Dotfiles Uncommitted Changes!"
     fi
 fi
 
-# 6. 管理外プロファイルの警告
-if [ -x "$HOME/dotfiles/scripts/check_unmanaged_profiles.sh" ]; then
-    "$HOME/dotfiles/scripts/check_unmanaged_profiles.sh"
+# 管理外プロファイルチェック
+CHECK_SCRIPT="$HOME/dotfiles/scripts/check_unmanaged_profiles.sh"
+if [ -x "$CHECK_SCRIPT" ]; then
+    "$CHECK_SCRIPT"
 fi
 
-# 7. 今日のヒント
-if command -v show-tip > /dev/null 2>&1; then
+# 6. 今日のヒント
+if command -v show-tip &> /dev/null; then
     show-tip
 fi
