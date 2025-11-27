@@ -2,11 +2,6 @@
 
 {
   home.packages = with pkgs; [
-    # --- System Essentials ---
-    gnused        # gsed (必須: スクリプトの置換処理用)
-    gum           # UI Library (必須: メニュー表示用)
-    git
-    
     # --- Core Tools ---
     eza           # ls replacement
     bat           # cat replacement
@@ -19,13 +14,18 @@
     
     # --- Utilities ---
     jq            # JSON processor
+    gnused        # GNU sed
     ripgrep       # Fast grep
     fd            # Fast find
     gnupg         # GPG
     
-    # --- Security ---
+    # --- AI & Security ---
     snyk          # Security scanner
     trivy         # Vulnerability scanner
+    gum           # UI Library for scripts
+    
+    # --- Python/Dev ---
+    uv            # Python tool manager
 
     # --- Fonts ---
     (nerdfonts.override { fonts = [ "Hack" ]; })

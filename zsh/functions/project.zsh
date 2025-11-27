@@ -1,45 +1,53 @@
-# プロジェクト作成 (mkproj)
 function mkproj() {
-    if [ -z "$1" ] || [ -z "$2" ]; then
-        echo "❌ Usage: mkproj <Category> <Name>"
-        return 1
-    fi
-    local c="$1"; local n="$2"
-    local code="$REAL_CODE_DIR/$c/$n"
-    local asset="$REAL_ASSETS_DIR/$c/$n"
-    local para="$PARA_DIR/1_Projects/$n"
+    if [ -z "$1" ] || [ -z "$2" ]; then echo "❌ Usage: mkproj <Category> <Name>"; return 1; fi
+    local c="$1"; local n="$2"; local p="$REAL_CODE_DIR/$c/$n"
+    local a="$REAL_ASSETS_DIR/$c/$n"; local para="$PARA_DIR/1_Projects/$n"
 
-    mkdir -p "$code/.vscode"
-    mkdir -p "$asset"/{Design,Video,Export}
+    mkdir -p "$p/.vscode"
+    mkdir -p "$a"/{Design,Video,Export}
     mkdir -p "$para"
 
-    ln -s "$asset" "$code/_GoToCreative"
-    ln -s "$code" "$asset/_GoToCode"
-    ln -s "$code" "$para/💻_Code"
-    ln -s "$asset" "$para/🎨_Assets"
-    
-    git -C "$code" init
-    echo "# $n" > "$code/README.md"
-    touch "$code/.env"; echo "dotenv" > "$code/.envrc"
-    echo ".env" >> "$code/.gitignore"; echo ".envrc" >> "$code/.gitignore"
-    
-    # 推奨拡張機能の自動設定
+    ln -s "$a" "$p/_GoToCreative"
+    ln -s "$p" "$a/_GoToCode"
+    ln -s "$p" "$para/💻_Code"
+    ln -s "$a" "$para/🎨_Assets"
+
+    git -C "$p" init
+    echo "# $n" > "$p/README.md"
+    touch "$p/.env"
+    echo "dotenv" > "$p/.envrc"
+    echo ".env" >> "$p/.gitignore"
+    echo ".envrc" >> "$p/.gitignore"
+
+    # AI or Preset for Extensions
     local tpl="$HOME/dotfiles/templates/vscode/$c.txt"
     local exts_json="[]"
     if [ -f "$tpl" ]; then
         exts_json=$(cat "$tpl" | jq -R . | jq -s .)
+    elif [ -n "$GEMINI_API_KEY" ]; then
+        echo "🤖 Asking AI for recommended extensions..."
+        local prompt="List 5 essential VS Code extension IDs for '$c' development. Output IDs only."
+        local res=$(curl -s -H "Content-Type: application/json" \
+            -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$prompt\" }] }] }" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
+            | jq -r '.candidates[0].content.parts[0].text' | sed 's/`//g')
+        if [ -n "$res" ]; then
+            exts_json=$(echo "$res" | jq -R . | jq -s .)
+        fi
     fi
+    
     if [ "$exts_json" != "[]" ]; then
-        echo "{ \"recommendations\": $exts_json }" > "$code/.vscode/extensions.json"
+        echo "{ \"recommendations\": $exts_json }" > "$p/.vscode/extensions.json"
     fi
 
-    git -C "$code" add .
-    git -C "$code" commit -m "feat: Init"
-
-    echo "✨ Created!"; cd "$code"; if command -v direnv &>/dev/null; then direnv allow .; fi
+    git -C "$p" add .
+    git -C "$p" commit -m "feat: Init"
+    
+    notify "New Project" "$n created successfully!"
+    echo "✨ Created $n"
+    cd "$p"; if command -v direnv &>/dev/null; then direnv allow .; fi
 }
 
-# 作業開始 (work)
 function work() {
     local n="$1"
     if [ -z "$1" ]; then
@@ -53,23 +61,22 @@ function work() {
         echo "🚀 Launching: $n"
         mkdir -p "$r/docs"
         local log="$r/docs/DEV_LOG.md"
-        if [ ! -f "$log" ]; then echo "# Dev Log" > "$log"; fi
+        if [ ! -f "$log" ]; then echo "# Dev Log: $n" > "$log"; fi
         
         echo "\n## $(date '+%Y-%m-%d %H:%M')" >> "$log"
         
         cd "$r"
         if [ -d "$p/🎨_Assets" ]; then open "$p/🎨_Assets"; fi
         
-        # VS Codeを開いて閉じるまで待機
+        # VS Codeを開いて閉じるまで待つ
         code --wait "$r" "$log"
         
-        # 閉じた後の自動保存処理
-        echo "🤖 Auto-Saving..."
+        echo "🤖 Auto-Saving Session..."
         if [ -n "$GEMINI_API_KEY" ]; then
             local gl=$(git log --since="midnight" --oneline)
             local gd=$(git diff HEAD)
             if [ -n "$gl" ] || [ -n "$gd" ]; then
-                local prompt="Summarize work for log:\nLog:\n$gl\nDiff:\n$gd"
+                local prompt="Summarize work for log based on:\nLog:\n$gl\nDiff:\n$gd"
                 local res=$(curl -s -H "Content-Type: application/json" \
                     -d "{ \"contents\": [{ \"parts\": [{ \"text\": \"$prompt\" }] }] }" \
                     "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$GEMINI_API_KEY" \
@@ -84,10 +91,9 @@ function work() {
     fi
 }
 
-# 作業終了 (finish-work)
 function finish-work() {
     local log="./docs/DEV_LOG.md"
-    if [ ! -d ".git" ] || [ ! -f "$log" ]; then echo "❌ Not in project."; return 1; fi
+    if [ ! -d ".git" ]; then echo "❌ Not in project."; return 1; fi
     
     local gl=$(git log --since="midnight" --oneline)
     local gd=$(git diff HEAD)
@@ -107,45 +113,19 @@ function finish-work() {
     git add .
     git commit -m "chore: Update log"
     git push
+    notify "Work Finished" "Great job!"
     echo "🎉 Complete!"
 }
 alias done="finish-work"
 
-function scratch() {
+function scratch() { 
     local p=$(grep -v "^#" "$HOME/dotfiles/vscode/profile_list.txt" | cut -d: -f1 | fzf --prompt="🐍 Profile > ")
-    if [ -n "$p" ]; then code --profile "$p"; fi
+    if [ -n "$p" ]; then code --profile "$p"; fi 
 }
-
-function archive() {
+function archive() { 
     local n="$1"
-    if [ -z "$1" ]; then
-        n=$(ls "$PARA_DIR/1_Projects" | fzf --prompt="📦 Archive > ")
-        if [ -z "$n" ]; then return 1; fi
-    fi
+    if [ -z "$1" ]; then n=$(ls "$PARA_DIR/1_Projects" | fzf --prompt="📦 Archive > "); if [ -z "$n" ]; then return 1; fi; fi
     mv "$PARA_DIR/1_Projects/$n" "$PARA_DIR/4_Archives/$n"
     echo "📦 Archived."
 }
-
-function map() {
-    echo "\n📍 PARA:"
-    eza --tree --level=2 --icons "$HOME/PARA"
-    echo "\n📦 Projects:"
-    eza --tree --level=2 --icons "$HOME/Projects"
-}
-
-function jump() {
-    local c=$(pwd); local t=""
-    if [[ "$c" == *"/Projects/"* ]]; then
-        t="${c/Projects/Creative}"
-    elif [[ "$c" == *"/Creative/"* ]]; then
-        t="${c/Creative/Projects}"
-    else
-        echo "❌ Not in project."
-        return 1
-    fi
-    if [ -d "$t" ]; then
-        cd "$t"; echo "🚀 Jumped!"; eza --icons
-    else
-        echo "⚠️ Target not found."
-    fi
-}
+function map() { echo "📍 PARA:"; eza --tree --level=2 --icons "$HOME/PARA"; echo "📦 Projects:"; eza --tree --level=2 --icons "$HOME/Projects"; }
