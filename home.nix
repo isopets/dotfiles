@@ -13,7 +13,6 @@
     ./nix/modules/core.nix
     ./nix/modules/shell.nix
     ./nix/modules/vscode.nix
-    ./nix/modules/vscode/profiles.nix 
   ];
 
   # ★ここを削除しました (もう手動退避するので不要)
