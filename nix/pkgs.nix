@@ -3,6 +3,7 @@
 {
   home.packages = with pkgs; [
     # --- Nix Support ---
+    nh
     nixfmt-rfc-style  # formatter
     
     # --- Core Tools ---
@@ -32,5 +33,7 @@
 
     # --- Fonts ---
     (nerdfonts.override { fonts = [ "Hack" ]; })
+    yq
+    user aborted
   ];
 }
