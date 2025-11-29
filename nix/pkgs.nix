@@ -2,6 +2,9 @@
 
 {
   home.packages = with pkgs; [
+    # --- Nix Support ---
+    nixfmt        # formatter
+    
     # --- Core Tools ---
     eza           # ls replacement
     bat           # cat replacement
