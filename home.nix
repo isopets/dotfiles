@@ -1,6 +1,9 @@
 { config, pkgs, ... }:
 
 {
+  # 【追記する設定】非自由パッケージ (VS Codeなど) の利用を許可
+  nixpkgs.config.allowUnfree = true;
+ 
  # 既存の imports を拡張し、全てのモジュールを含める
   imports = [ 
     # パッケージリスト

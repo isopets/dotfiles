@@ -3,7 +3,7 @@
 {
   home.packages = with pkgs; [
     # --- Nix Support ---
-    nixfmt        # formatter
+    nixfmt-rfc-style  # formatter
     
     # --- Core Tools ---
     eza           # ls replacement
