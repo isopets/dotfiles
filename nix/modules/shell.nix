@@ -14,8 +14,8 @@
 
   # Starship設定 (外部ファイル)
   programs.starship.enable = true;
-  xdg.configFile."starship.toml".source = ../config/starship.toml;
-
+  xdg.configFile."starship.toml".source = ../../config/starship.toml;
+  
   # フォント設定
   fonts.fontconfig.enable = true;
 }
