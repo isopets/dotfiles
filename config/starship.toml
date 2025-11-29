@@ -61,3 +61,12 @@ format = "[$symbol $output]($style)"
 success_symbol = "[❯](bold green)"
 error_symbol = "[❯](bold red)"
 vicmd_symbol = "[❮](bold yellow)"
+
+# --- [Custom Module: VS Code Profile] ---
+[custom.vscode_profile]
+# workコマンドで設定された環境変数 COCKPIT_VSCODE_PROFILE を表示
+command = 'echo "$COCKPIT_VSCODE_PROFILE"'
+when = "test -n \"$COCKPIT_VSCODE_PROFILE\""
+format = "on [${output}]($style) "
+style = "bold yellow"
+disabled = false
