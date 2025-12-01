@@ -1,0 +1,7 @@
+# Gemini APIのトークン単価設定 (100万トークンあたりドル)
+# ※ 実際のコストは変動します。必要に応じて更新してください。
+
+gemini-2-flash:
+  # Gemini 2.0 Flash の仮単価設定 (USD/1M tokens)
+  input: 0.20
+  output: 0.40
