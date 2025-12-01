@@ -1,11 +1,9 @@
 # =================================================================
-# 🛠️ Utility Functions (Core System)
+# 🛠️ Utility Functions (Brain & System)
 # =================================================================
 
 function sz() {
     echo "🔄 Re-spawning Shell Process..."
-    # source ではなく exec を使うことで、プロセスごと新品に入れ替える
-    # これにより、VS Code上でも「ターミナル再起動」と同じ効果が得られる
     exec zsh
 }
 
@@ -17,14 +15,95 @@ function rules() {
 function dot-doctor() {
     echo "🚑 Cockpit System Diagnosis..."
     local health=100
-    
-    # 簡易チェック
     if command -v fzf >/dev/null; then echo "  ✅ fzf found"; else echo "  ❌ fzf missing"; health=50; fi
     if command -v code >/dev/null; then echo "  ✅ code found"; else echo "  ❌ code missing"; health=50; fi
     
-    if [ $health -eq 100 ]; then
-        echo "✨ System Healthy."
-    else
-        echo "⚠️ System Check Failed."
+    if [ $health -eq 100 ]; then echo "✨ System Healthy."; else echo "⚠️ System Check Failed."; fi
+}
+
+# --- The Second Brain ---
+function brain() {
+    local brain_dir="$HOME/PARA/0_Inbox/Brain"
+    mkdir -p "$brain_dir"
+
+    # サブコマンド分岐
+    if [ "$1" = "new" ]; then
+        echo -n "🧠 Note Title: "; read title
+        local safe_title=$(echo "$title" | tr ' ' '_')
+        local file="$brain_dir/$(date +%Y%m%d)_${safe_title}.md"
+        echo "# $title\n\n" > "$file"
+        code "$file"
+        return
     fi
+
+    # 検索モード (fzf + bat preview)
+    # ファイルの中身も検索対象にする (grep)
+    local selected=$(grep -r "" "$brain_dir" 2>/dev/null | \
+        fzf --delimiter : --with-nth 1,3 --preview 'bat --style=numbers --color=always {1} --highlight-line {2}' \
+            --preview-window 'right:60%' \
+            --prompt="🧠 Search Brain > " \
+            --bind 'enter:execute(code {1})')
+}
+
+# --- 🧭 Contextual Guide (HUD) ---
+function guide() {
+    echo ""
+    gum style --foreground 214 --bold --border double --padding "0 2" "🧭 COCKPIT HUD: Contextual Guide"
+    echo ""
+
+    # 1. 現在地のコンテキスト分析
+    if git rev-parse --is-inside-work-tree &>/dev/null; then
+        gum style --foreground 196 "🔥 You are inside a Project (Git Repo)"
+        echo "Recommended Actions:"
+        echo "  🚀 work        : Re-launch environment (VS Code + Assets)"
+        echo "  🏁 done        : Finish work (Auto-Log & Commit)"
+        echo "  💬 gcm         : Generate AI Commit Message"
+        echo "  🕹️  lazygit     : Open Git Cockpit"
+    else
+        gum style --foreground 39 "🌍 You are in Global Space"
+        echo "Recommended Actions:"
+        echo "  ✨ mkproj      : Create new project (Intent-Driven)"
+        echo "  🧠 brain       : Search Knowledge Base"
+        echo "  📝 scratch     : Open temporary workspace"
+        echo "  z <name>       : Teleport to project"
+    fi
+
+    echo ""
+    gum style --foreground 244 "--- System Shortcuts ---"
+    echo "  🔄 sz          : Reload Shell (Fix weirdness)"
+    echo "  💊 dot-doctor  : Diagnose system health"
+    echo "  🕰️  nix-history : Restore previous config"
+    echo ""
+}
+
+# --- 🧭 Contextual Guide (HUD) ---
+function guide() {
+    echo ""
+    gum style --foreground 214 --bold --border double --padding "0 2" "🧭 COCKPIT HUD: Contextual Guide"
+    echo ""
+
+    # 1. 現在地のコンテキスト分析
+    if git rev-parse --is-inside-work-tree &>/dev/null; then
+        gum style --foreground 196 "🔥 You are inside a Project (Git Repo)"
+        echo "Recommended Actions:"
+        echo "  🚀 work        : Re-launch environment (VS Code + Assets)"
+        echo "  🏁 done        : Finish work (Auto-Log & Commit)"
+        echo "  💬 gcm         : Generate AI Commit Message"
+        echo "  🕹️  lazygit     : Open Git Cockpit"
+    else
+        gum style --foreground 39 "🌍 You are in Global Space"
+        echo "Recommended Actions:"
+        echo "  ✨ mkproj      : Create new project (Intent-Driven)"
+        echo "  🧠 brain       : Search Knowledge Base"
+        echo "  📝 scratch     : Open temporary workspace"
+        echo "  z <name>       : Teleport to project"
+    fi
+
+    echo ""
+    # 修正点: ハイフンの代わりに安全な区切り線を使用し、-- で引数を保護
+    gum style --foreground 244 -- "=== System Shortcuts ==="
+    echo "  🔄 sz          : Reload Shell (Fix weirdness)"
+    echo "  💊 dot-doctor  : Diagnose system health"
+    echo "  🕰️  nix-history : Restore previous config"
+    echo ""
 }

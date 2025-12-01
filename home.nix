@@ -6,13 +6,12 @@
  
  # 既存の imports を拡張し、全てのモジュールを含める
   imports = [ 
-    # パッケージリスト
     ./nix/pkgs.nix
-    
-    # 全ての設定モジュール
     ./nix/modules/core.nix
     ./nix/modules/shell.nix
+    ./nix/modules/zsh.nix
     ./nix/modules/vscode.nix
+    ./nix/modules/neovim.nix  # <--- NEW!
   ];
 
   # ★ここを削除しました (もう手動退避するので不要)

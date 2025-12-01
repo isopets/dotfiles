@@ -34,6 +34,5 @@
     # --- Fonts ---
     (nerdfonts.override { fonts = [ "Hack" ]; })
     yq
-    user aborted
   ];
 }
