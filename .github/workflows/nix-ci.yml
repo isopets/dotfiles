@@ -1,0 +1,30 @@
+name: "Cockpit CI"
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Check Flake Syntax
+      run: nix flake check
+      
+    - name: Test Zsh Syntax
+      # Zshファイルに構文エラーがないかチェック
+      run: |
+        sudo apt-get install -y zsh
+        for f in zsh/functions/*.zsh; do
+          zsh -n "$f" && echo "✅ $f OK" || exit 1
+        done
+
+    # 将来的にはここで home-manager build をテストすることも可能

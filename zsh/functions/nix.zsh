@@ -1,5 +1,5 @@
 # =================================================================
-# 💻 Nix Management (Auto-Sync & Auto-Reload)
+# 💻 Nix Management (Auto-Sync, Push & Safe-Reload)
 # =================================================================
 
 function nix-add() {
@@ -27,15 +27,14 @@ function nix-up() {
     
     if [ -n "$diff" ]; then
         echo "🤖 Detected changes. Auto-committing..."
-        # AIコミットメッセージ生成 (失敗時はデフォルト)
         local msg=$(ask "Generate a git commit message for these changes (Conventional Commits). Output only the string:\n\n$diff" | head -n 1)
         [ -z "$msg" ] && msg="chore(nix): update configuration"
         
-        echo -e "💬 Commit: \033[1;32m$msg\033[0m"
+        echo -e "�� Commit: \033[1;32m$msg\033[0m"
         git -C "$dir" commit -m "$msg"
     fi
 
-    # 2. 競合ファイルの自動退避 (Conflict Resolver)
+    # 2. 競合ファイルの自動退避
     for file in "$HOME/.zshrc" "$HOME/.zshenv"; do
         if [ -f "$file" ] && [ ! -L "$file" ]; then
             echo "🧹 Backing up conflicting file: $file"
@@ -43,13 +42,18 @@ function nix-up() {
         fi
     done
 
-    # 3. 爆速適用 & 自動リロード
+    # 3. 爆速適用 & 自動リロード (sz連携)
     echo "🚀 Updating Nix Environment..."
     if nh home switch "$dir"; then
-        gum style --foreground 82 "✅ Update Complete! Reloading Shell..."
         
-        # ★ ここで自動的にシェルを再起動 (手動実行は不要)
-        exec zsh
+        # --- NEW: Cloud Sync (Auto-Push) ---
+        echo "☁️  Syncing to GitHub..."
+        git -C "$dir" push origin main 2>/dev/null || echo "⚠️ Push failed. Local is updated."
+        
+        gum style --foreground 82 "✅ Update Complete! Invoking safe reload..."
+        
+        # ★ ここで sz を呼び出す (浄化 + 再起動)
+        sz
     else
         gum style --foreground 196 "❌ Update Failed."
         return 1
@@ -59,7 +63,6 @@ function nix-up() {
 function nix-edit() { 
     local menu_items="pkgs.nix\ncore.nix\nshell.nix\nvscode.nix\nneovim.nix\nzsh.nix"
     local selected=$(echo -e "$menu_items" | fzf --prompt="📝 Edit Module > " --height=40% --layout=reverse)
-    
     case "$selected" in
         "pkgs.nix") code ~/dotfiles/nix/pkgs.nix ;;
         "core.nix") code ~/dotfiles/nix/modules/core.nix ;;
@@ -75,19 +78,16 @@ function nix-clean() {
     nh clean all --keep 7d 
 }
 
-# 履歴機能 (Time Machine)
 function nix-history() {
     local generations=$(home-manager generations | head -n 30)
     [ -z "$generations" ] && echo "❌ No history." && return 1
-    
     local selected=$(echo "$generations" | gum choose --height 10 --header "🕰️ Select Generation to Restore:")
-    
     if [ -n "$selected" ]; then
         local gen_path=$(echo "$selected" | awk '{print $7}')
         if gum confirm "Rollback to this state?"; then
             "$gen_path/activate"
-            echo "✅ Rolled back. Reloading..."
-            exec zsh
+            echo "✅ Rolled back."
+            sz # ここも sz に統一
         fi
     fi
 }
