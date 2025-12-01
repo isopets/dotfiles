@@ -1,5 +1,5 @@
 # =================================================================
-# 💻 Nix Management (Auto-Sync, Push & Safe-Reload)
+# 💻 Nix Management (Auto-Sync, Push & Robust Reload)
 # =================================================================
 
 function nix-add() {
@@ -30,7 +30,7 @@ function nix-up() {
         local msg=$(ask "Generate a git commit message for these changes (Conventional Commits). Output only the string:\n\n$diff" | head -n 1)
         [ -z "$msg" ] && msg="chore(nix): update configuration"
         
-        echo -e "�� Commit: \033[1;32m$msg\033[0m"
+        echo -e "💬 Commit: \033[1;32m$msg\033[0m"
         git -C "$dir" commit -m "$msg"
     fi
 
@@ -42,24 +42,28 @@ function nix-up() {
         fi
     done
 
-    # 3. 爆速適用 & 自動リロード (sz連携)
+    # 3. 爆速適用 & ロバスト・リロード
     echo "🚀 Updating Nix Environment..."
     if nh home switch "$dir"; then
-        
-        # --- NEW: Cloud Sync (Auto-Push) ---
         echo "☁️  Syncing to GitHub..."
         git -C "$dir" push origin main 2>/dev/null || echo "⚠️ Push failed. Local is updated."
         
-        gum style --foreground 82 "✅ Update Complete! Invoking safe reload..."
+        gum style --foreground 82 "✅ Update Complete! Reloading..."
         
-        # ★ ここで sz を呼び出す (浄化 + 再起動)
-        sz
+        # ★ 改善点: sz があれば使い、なければ exec zsh を使う
+        if command -v sz &>/dev/null; then
+            sz
+        else
+            echo "🔄 'sz' not found yet. Falling back to standard reload."
+            exec zsh
+        fi
     else
         gum style --foreground 196 "❌ Update Failed."
         return 1
     fi
 }
 
+# --- Other Functions ---
 function nix-edit() { 
     local menu_items="pkgs.nix\ncore.nix\nshell.nix\nvscode.nix\nneovim.nix\nzsh.nix"
     local selected=$(echo -e "$menu_items" | fzf --prompt="📝 Edit Module > " --height=40% --layout=reverse)
@@ -87,7 +91,7 @@ function nix-history() {
         if gum confirm "Rollback to this state?"; then
             "$gen_path/activate"
             echo "✅ Rolled back."
-            sz # ここも sz に統一
+            if command -v sz &>/dev/null; then sz; else exec zsh; fi
         fi
     fi
 }

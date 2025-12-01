@@ -32,6 +32,35 @@
       setopt +o nomatch
       setopt interactivecomments
 
+      # Paste Safety
+      autoload -Uz bracketed-paste-magic
+      zle -N bracketed-paste bracketed-paste-magic
+      # URLなどを貼り付けた時の勝手なエスケープを防止
+      autoload -Uz url-quote-magic
+      zle -N self-insert url-quote-magic
+
+        # --- 🛡️ Clipboard Safety Mechanism ---
+      # pbpaste (macOS) を使って、クリップボードの中身を直接ファイルに吐き出す
+      # Usage: コピーした後、'pf filename' と打つだけ
+      function pf() {
+          local file="$1"
+          if [ -z "$file" ]; then
+              echo "❌ Usage: Copy text, then run 'pf <filename>'"
+              return 1
+          fi
+          
+          # Macのクリップボード(pbpaste)から直接書き込む
+          if command -v pbpaste >/dev/null; then
+              pbpaste > "$file"
+              echo "✅ Pasted clipboard content to '$file' (Securely)"
+              # 中身をチラ見せ確認
+              head -n 3 "$file"
+              echo "..."
+          else
+              echo "❌ 'pbpaste' not found. Are you on macOS?"
+          fi
+      }
+
       # 2. FZF-Tab Config
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
       zstyle ':completion:*:git-checkout:*' sort false
