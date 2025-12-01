@@ -63,11 +63,9 @@
     
     # [NEW] System Monitor (かっこいいTOPコマンド)
     bottom 
-    
-    # [NEW] Security Vault
-    bitwarden-cli
 
     # Unstable Channel
-    pkgs-unstable.sheldon 
+    pkgs-unstable.sheldon
+    pkgs-unstable.bitwarden-cli
   ];
 }
