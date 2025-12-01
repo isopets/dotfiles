@@ -1,4 +1,5 @@
-{ pkgs, ... }:
+# 引数に pkgs-unstable を追加し、両方使えるようにする
+{ pkgs, pkgs-unstable, ... }:
 
 {
   home.packages = with pkgs; [
@@ -35,5 +36,6 @@
     (nerdfonts.override { fonts = [ "Hack" ]; })
     yq
     hello
+    pkgs-unstable.just
   ];
 }

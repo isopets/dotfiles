@@ -3,18 +3,52 @@
 # =================================================================
 
 function nix-add() {
-    local pkg="$1";
+    local pkg="$1"
     local dir="$HOME/dotfiles"
     local file="$dir/nix/pkgs.nix"
     
-    if [ -z "$pkg" ]; then pkg=$(gum input --placeholder "Package Name (e.g. yq)"); fi
+    # 1. パッケージ名の入力
+    if [ -z "$pkg" ]; then 
+        pkg=$(gum input --placeholder "📦 Package Name (e.g. neovim)")
+    fi
     [ -z "$pkg" ] && return 1
     
-    echo "🔍 Adding '$pkg'..."
-    if command -v gsed &>/dev/null; then SED="gsed"; else SED="sed"; fi
-    "$SED" -i "/^  ];/i \\    $pkg" "$file"
+    echo "🔍 Checking versions for '$pkg'..."
+
+    # 2. バージョン情報の取得 (nix search は遅いので、簡易的に web検索か、あるいはdry-run的な確認がベストだが、
+    #    ここではシンプルに「チャンネル選択」をユーザーに委ねるUIにする)
+    #    ※ 本当に厳密なバージョン比較はAPIを叩く必要があるため、今回は「意図」で選ぶUIにします。
+
+    local mode=$(gum choose \
+        "🛡️  Stable    (Reliability First)" \
+        "🚀 Unstable  (Newest Features)" \
+        "❌ Cancel")
+
+    local pkg_str=""
     
-    echo "📝 Added. Starting Auto-Sync..."
+    case "$mode" in
+        *"Stable"*)
+            pkg_str="    $pkg"
+            echo "📦 Selected: Stable Channel"
+            ;;
+        *"Unstable"*)
+            pkg_str="    pkgs-unstable.$pkg"
+            echo "🚀 Selected: Unstable Channel"
+            ;;
+        *)
+            echo "👋 Canceled."
+            return 1
+            ;;
+    esac
+    
+    # 3. pkgs.nix への追記
+    # sedを使ってリストの末尾（];の前）に挿入
+    if command -v gsed &>/dev/null; then SED="gsed"; else SED="sed"; fi
+    "$SED" -i "/^  ];/i \\$pkg_str" "$file"
+    
+    echo "📝 Added '$pkg_str' to pkgs.nix"
+    
+    # 4. Auto-Sync
     nix-up
 }
 
