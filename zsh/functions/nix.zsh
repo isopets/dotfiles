@@ -1,5 +1,5 @@
 # =================================================================
-# 💻 Nix Management (Auto-Sync & High-Speed)
+# 💻 Nix Management (Auto-Sync & Auto-Reload)
 # =================================================================
 
 function nix-add() {
@@ -14,7 +14,6 @@ function nix-add() {
     if command -v gsed &>/dev/null; then SED="gsed"; else SED="sed"; fi
     "$SED" -i "/^  ];/i \\    $pkg" "$file"
     
-    # 変更後、即座に nix-up (Auto-Sync) を呼び出す
     echo "📝 Added. Starting Auto-Sync..."
     nix-up
 }
@@ -22,39 +21,38 @@ function nix-add() {
 function nix-up() {
     local dir="$HOME/dotfiles"
     
-    # 1. 変更の検知
+    # 1. 変更検知 & 自動コミット
     git -C "$dir" add .
     local diff=$(git -C "$dir" diff --cached)
     
-    # 2. 変更がある場合のみ、AIコミットを実行
     if [ -n "$diff" ]; then
-        echo "🤖 Detected changes. Generating commit message..."
+        echo "🤖 Detected changes. Auto-committing..."
+        # AIコミットメッセージ生成 (失敗時はデフォルト)
+        local msg=$(ask "Generate a git commit message for these changes (Conventional Commits). Output only the string:\n\n$diff" | head -n 1)
+        [ -z "$msg" ] && msg="chore(nix): update configuration"
         
-        # AIにメッセージを生成させる (ask関数を利用)
-        local prompt="Generate a concise git commit message for these nix config changes (Conventional Commits). Output only the message string:\n\n$diff"
-        local msg=$(ask "$prompt" | head -n 1) # 1行だけ取得
-        
-        if [ -z "$msg" ] || [ "$msg" = "null" ]; then
-            msg="chore(nix): update configuration"
-        fi
-        
-        # ユーザーに確認せずとも、「適用したい」という意図は明白なので
-        # メッセージを表示して即コミット (嫌なら Ctrl+C で止める猶予を1秒与える)
         echo -e "💬 Commit: \033[1;32m$msg\033[0m"
-        sleep 1
-        
         git -C "$dir" commit -m "$msg"
     fi
 
-    # 3. 爆速適用 (nh)
-    # もう Dirty ではないので警告は出ません
+    # 2. 競合ファイルの自動退避 (Conflict Resolver)
+    for file in "$HOME/.zshrc" "$HOME/.zshenv"; do
+        if [ -f "$file" ] && [ ! -L "$file" ]; then
+            echo "🧹 Backing up conflicting file: $file"
+            mv "$file" "${file}.backup_$(date +%s)"
+        fi
+    done
+
+    # 3. 爆速適用 & 自動リロード
     echo "🚀 Updating Nix Environment..."
     if nh home switch "$dir"; then
-        gum style --foreground 82 "✅ Update Complete!"
-        # シェルを再起動して設定を即時反映
+        gum style --foreground 82 "✅ Update Complete! Reloading Shell..."
+        
+        # ★ ここで自動的にシェルを再起動 (手動実行は不要)
         exec zsh
     else
         gum style --foreground 196 "❌ Update Failed."
+        return 1
     fi
 }
 
@@ -75,4 +73,21 @@ function nix-edit() {
 function nix-clean() { 
     echo "✨ Cleaning Nix store..."
     nh clean all --keep 7d 
+}
+
+# 履歴機能 (Time Machine)
+function nix-history() {
+    local generations=$(home-manager generations | head -n 30)
+    [ -z "$generations" ] && echo "❌ No history." && return 1
+    
+    local selected=$(echo "$generations" | gum choose --height 10 --header "🕰️ Select Generation to Restore:")
+    
+    if [ -n "$selected" ]; then
+        local gen_path=$(echo "$selected" | awk '{print $7}')
+        if gum confirm "Rollback to this state?"; then
+            "$gen_path/activate"
+            echo "✅ Rolled back. Reloading..."
+            exec zsh
+        fi
+    fi
 }
