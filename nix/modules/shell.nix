@@ -56,7 +56,6 @@
   
   # --- 3. Packages ---
   home.packages = with pkgs; [
-    zsh-fzf-tab
     trash-cli
     shellcheck
     shfmt
