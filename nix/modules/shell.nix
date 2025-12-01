@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, pkgs-unstable, ... }:
 
 {
   # --- 1. Magical History (Atuin) ---
@@ -71,5 +71,7 @@
     
     # Workspace
     zellij        # ターミナルマルチプレクサ
+    # Sheldon を Unstable チャンネルからインストール
+    pkgs-unstable.sheldon
   ];
 }

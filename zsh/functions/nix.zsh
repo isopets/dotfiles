@@ -95,3 +95,16 @@ function nix-history() {
         fi
     fi
 }
+
+# --- 🔄 System Update (Update Flake Lock) ---
+function nix-update() {
+    local dir="$HOME/dotfiles"
+    echo "🔄 Fetching latest package versions (Stable & Unstable)..."
+    
+    # 1. カタログ(flake.lock)を最新に更新
+    nix flake update --flake "$dir"
+    
+    # 2. 自動コミット & 適用 (既存のnix-upを呼び出す)
+    echo "🚀 Applying updates..."
+    nix-up
+}
