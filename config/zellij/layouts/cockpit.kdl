@@ -1,0 +1,32 @@
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+    tab name="Cockpit" focus=true {
+        pane split_direction="vertical" {
+            // 左側: メイン作業エリア (60%)
+            pane size="60%" focus=true {
+                name "Main Shell"
+            }
+            
+            // 右側: 情報パネル (40%)
+            pane split_direction="horizontal" {
+                // 右上: Git監視
+                pane size="60%" command="lazygit" {
+                    name "Git Control"
+                }
+                // 右下: システム負荷
+                pane size="40%" command="btm" {
+                    name "System Monitor"
+                }
+            }
+        }
+    }
+}

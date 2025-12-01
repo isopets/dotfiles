@@ -1,94 +1,134 @@
 # =================================================================
-# 🎮 Cockpit Logic (Live Editable & Auto-Docs)
+# 🎮 Cockpit Logic (Zellij & Bitwarden Integrated)
 # =================================================================
 
-# --- 1. Safety First (Trash instead of Rm) ---
-# 事故防止のため rm をブロックし、del (trash-put) を推奨
+# --- 1. System Context ---
+export DOTFILES="$HOME/dotfiles"
+export PATH="$HOME/.nix-profile/bin:$PATH"
+setopt +o nomatch
+setopt interactivecomments
+
+# --- 2. Safety & Interface ---
 alias rm="echo '⛔️ Use \"del\" (trash) or \"/bin/rm\"'; false"
 alias del="trash-put"
 
-# --- 2. Unified Interface (Smart Edit) ---
 function edit() {
     local file="${1:-.}"
-    # ファイルが存在しない、またはサイズが大きい場合は VS Code
     if [ ! -f "$file" ] || [ $(stat -f %z "$file" 2>/dev/null || echo 0) -gt 100000 ]; then
-        gum style --foreground 33 "🚀 Launching VS Code..."
+        gum style --foreground 33 "🚀 VS Code: $file"
         code "$file"
     else
-        # 小さなファイルは Neovim で瞬時に開く
-        gum style --foreground 150 "⚡ Launching Neovim..."
+        gum style --foreground 150 "⚡ Neovim: $file"
         nvim "$file"
     fi
 }
 
-# --- 3. Auto-Generating Guide (The Magic HUD) ---
-function guide() {
-    echo ""
-    gum style --foreground 214 --bold --border double --padding "0 2" "🧭 COCKPIT HUD (Auto-Generated)"
-    echo ""
-
-    # このファイル自身のコメント(##)を解析してマニュアル化
-    local doc_file="$HOME/dotfiles/zsh/cockpit_logic.zsh"
+# --- 3. Work Environment (Zellij Cockpit) ---
+function work() {
+    local n="$1"
     
-    local menu_items=$(grep -B 1 "^[[:space:]]*alias\|^[[:space:]]*function" "$doc_file" | \
-        grep -v "^--$" | \
-        sed -N 's/^[[:space:]]*##[[:space:]]*//p; n; s/^[[:space:]]*alias \([^=]*\)=.*/\1/p; s/^[[:space:]]*function \([^ (]*\).*/\1/p' | \
-        paste - - | \
-        awk -F'\t' '{printf "  %-10s : %s\n", $2, $1}')
-
-    echo "🔥 Available Actions:"
-    echo "$menu_items"
+    # プロジェクト選択
+    if [ -z "$1" ]; then
+        n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt="🚀 Select Project > " --height=50% --layout=reverse)
+        if [ -z "$n" ]; then return 1; fi
+    fi
     
-    echo ""
-    gum style --foreground 244 -- "=== Shortcuts ==="
-    echo "  del <file> : Move to Trash (Safe Delete)"
-    echo "  Ctrl+R     : Search History (Atuin)"
-    echo "  Tab        : Visual Completion (FZF)"
+    local p="$HOME/PARA/1_Projects/$n"
+    local r=$(readlink "$p/💻_Code")
+    
+    if [ -d "$r" ]; then
+        echo "🚀 Launching Cockpit for: $n"
+        
+        # 資産フォルダを開く
+        local asset_path=$(readlink "$p/🎨_Assets")
+        if [ -d "$asset_path" ]; then open "$asset_path"; fi
+        
+        # ディレクトリ移動
+        cd "$r"
+        
+        # VS Codeも裏で開いておく
+        code .
+
+        # ★ Zellij でコックピットモード起動
+        # セッション名はプロジェクト名。レイアウトは 'cockpit'
+        eval "zellij --session \"$n\" --layout \"$HOME/dotfiles/config/zellij/layouts/cockpit.kdl\""
+    else
+        echo "❌ Project code directory not found."
+    fi
 }
 
-# --- 4. Definitions with Docs (For Guide) ---
+# --- 4. Security Vault (Bitwarden) ---
+# .envを使わず、必要な時にメモリにロードする
+function load-secrets() {
+    if [ -n "$GEMINI_API_KEY" ]; then
+        echo "✅ Secrets already loaded in memory."
+        return 0
+    fi
 
-## Dashboard (Start here)
+    echo "🔐 Unlocking Bitwarden Vault..."
+    
+    # セッションキーがなければログイン/ロック解除
+    if [ -z "$BW_SESSION" ]; then
+        export BW_SESSION=$(bw unlock --raw)
+    fi
+    
+    if [ -n "$BW_SESSION" ]; then
+        echo "🔑 Fetching GEMINI_API_KEY..."
+        # 'Gemini' という名前のアイテムからパスワードを取得
+        export GEMINI_API_KEY=$(bw get password "Gemini API Key")
+        echo "✅ Secrets loaded into memory (Secure)."
+    else
+        echo "❌ Failed to unlock vault."
+    fi
+}
+
+# --- 5. AI Wrapper (Auto-Load Secrets) ---
+function ask() {
+    # キーがなければロードを試みる
+    [ -z "$GEMINI_API_KEY" ] && load-secrets
+
+    # それでもなければエラー
+    if [ -z "$GEMINI_API_KEY" ]; then echo "❌ API Key missing."; return 1; fi
+
+    local q="$1"
+    [ -z "$q" ] && echo "Usage: ask 'question'" && return 1
+    
+    # ... (既存のAIロジック) ...
+    echo "🤖 Asking Gemini..."
+    local url="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY"
+    local body=$(jq -n --arg q "$q" '{contents: [{parts: [{text: $q}]}]}')
+    local result=$(curl -s -X POST -H "Content-Type: application/json" -d "$body" "$url")
+    local text=$(echo "$result" | jq -r '.candidates[0].content.parts[0].text' 2>/dev/null)
+    
+    if [ -n "$text" ] && [ "$text" != "null" ]; then
+        echo ""; echo "$text" | gum format 2>/dev/null || echo "$text"
+    else
+        echo "❌ Error."
+    fi
+}
+
+# --- 6. Definitions ---
 alias d="dev"
-
-## Launch Work Environment
 alias w="work"
-
-## Create New Project
 alias m="mkproj"
-
-## Finish & Save Work
 alias f="finish-work"
-
-## Smart Editor (Code/Nvim)
 alias e="edit"
-
-## Ask AI (Gemini)
 alias a="ask"
-
-## Git Cockpit (Lazygit)
+alias c="gcm"
 alias g="lazygit"
-
-## Workspace (Zellij)
 alias zj="zellij"
-
-## Safe Delete (Trash)
-alias del="trash-put"
-
-## Reload Shell
+alias sec="load-secrets"
 alias sz="exec zsh"
 
-# --- 5. Loader (Secrets & Functions) ---
+# --- 7. Loader ---
+# 既存の .env は、移行期間中のみ残すが、基本は load-secrets 推奨
 [ -f "$DOTFILES/.env" ] && source "$DOTFILES/.env"
 
 if [ -d "$DOTFILES/zsh/functions" ]; then
-  for f in "$DOTFILES/zsh/functions/"*.zsh; do
-    [ -r "$f" ] && source "$f"
-  done
+  for f in "$DOTFILES/zsh/functions/"*.zsh; do [ -r "$f" ] && source "$f"; done
 fi
 
-# --- 6. Tool Init (Hooks) ---
-# Starship / Direnv は Nix側でも設定されているが、
-# Live-Link での確実な読み込みのためにフックを確認
+# --- 8. Init ---
+source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
 command -v starship >/dev/null && eval "$(starship init zsh)"
 command -v direnv >/dev/null && eval "$(direnv hook zsh)"

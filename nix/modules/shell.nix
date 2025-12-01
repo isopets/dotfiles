@@ -1,8 +1,7 @@
-# 引数に pkgs-unstable を追加
 { config, pkgs, pkgs-unstable, ... }:
 
 {
-  # --- 1. Magical History (Atuin) ---
+  # --- 1. Magical History ---
   programs.atuin = {
     enable = true;
     enableZshIntegration = true;
@@ -56,12 +55,19 @@
   
   # --- 3. Packages ---
   home.packages = with pkgs; [
+    zsh-fzf-tab
     trash-cli
     shellcheck
     shfmt
     zellij
     
-    # 🚨 ここ！ pkgs-unstable から Sheldon を入れる
+    # [NEW] System Monitor (かっこいいTOPコマンド)
+    bottom 
+    
+    # [NEW] Security Vault
+    bitwarden-cli
+
+    # Unstable Channel
     pkgs-unstable.sheldon 
   ];
 }
