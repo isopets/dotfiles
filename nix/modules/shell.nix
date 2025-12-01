@@ -1,3 +1,4 @@
+# 引数に pkgs-unstable を追加
 { config, pkgs, pkgs-unstable, ... }:
 
 {
@@ -14,7 +15,7 @@
     };
   };
 
-  # --- 2. Core Tools & Integrations ---
+  # --- 2. Core Tools ---
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
@@ -31,13 +32,10 @@
     options = ["--cmd cd"];
   };
 
-  # --- 3. Git & Delta (Visual Diff) ---
   programs.git = {
     enable = true;
     userName = "isopets";
     userEmail = "jandp.0717@gmail.com";
-    
-    # Delta: 美しいDiff表示ツール
     delta = {
       enable = true;
       options = {
@@ -46,32 +44,25 @@
         theme = "Dracula";
       };
     };
-    
     extraConfig = {
       pull.rebase = false;
       init.defaultBranch = "main";
     };
   };
 
-  # --- 4. UI & Fonts ---
   programs.starship.enable = true;
   xdg.configFile."starship.toml".source = ../../config/starship.toml;
   fonts.fontconfig.enable = true;
   
-  # --- 5. Package Bundle ---
+  # --- 3. Packages ---
   home.packages = with pkgs; [
-    # Shell Enhancements
-    zsh-fzf-tab   # 視覚的補完
-    trash-cli     # 安全な削除
-    sheldon       # プラグインマネージャー
+    zsh-fzf-tab
+    trash-cli
+    shellcheck
+    shfmt
+    zellij
     
-    # Quality Control
-    shellcheck    # シェルスクリプト解析
-    shfmt         # シェルスクリプト整形
-    
-    # Workspace
-    zellij        # ターミナルマルチプレクサ
-    # Sheldon を Unstable チャンネルからインストール
-    pkgs-unstable.sheldon
+    # 🚨 ここ！ pkgs-unstable から Sheldon を入れる
+    pkgs-unstable.sheldon 
   ];
 }
