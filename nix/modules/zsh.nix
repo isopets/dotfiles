@@ -15,8 +15,7 @@
       f = "finish-work";
       a = "ask";
       c = "gcm";
-      # [NEW] エディタ選択を edit に統合
-      e = "edit"; # 'e' で edit を起動
+      e = "edit";
       
       g = "lazygit";
       l = "eza -la --icons --git";
@@ -34,22 +33,40 @@
       setopt +o nomatch
       setopt interactivecomments
 
-      # 2. Unified Interface: edit コマンド (実装より意図)
+      # 2. FZF-Tab Config (Visual Completion)
+      source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
+      zstyle ':completion:*:git-checkout:*' sort false
+      zstyle ':completion:*:descriptions' format '[%d]'
+      zstyle ':completion:*' list-colors ''${(s.:.)LS_COLORS}
+      zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+      zstyle ':fzf-tab:complete:*:*' fzf-preview 'bat --color=always --style=numbers --line-range=:500 {}'
+
+      # 3. Unified Interface: edit コマンド
       function edit() {
-          local file="${1:-.}"
-          # フォルダ、または100KBより大きいファイルは VS Code で開く
+          # 🚨 修正箇所: Nixのエスケープ ''${...} を使用
+          local file="''${1:-.}"
+          
           if [ ! -f "$file" ] || [ $(stat -f %z "$file" 2>/dev/null || echo 0) -gt 100000 ]; then
               gum style --foreground 33 "🚀 Launching VS Code for $file..."
               code "$file"
           else
-              # 小さな設定ファイルなどは Neovim で爆速起動
               gum style --foreground 150 "⚡ Launching Neovim for $file..."
               nvim "$file"
           fi
       }
 
-      # 3. Load Components
-      # ... (既存のコードはそのまま維持)
+      # 4. Load Components
+      [ -f "$DOTFILES/.env" ] && source "$DOTFILES/.env"
+      
+      if [ -d "$DOTFILES/zsh/functions" ]; then
+        for f in "$DOTFILES/zsh/functions/"*.zsh; do
+          [ -r "$f" ] && source "$f"
+        done
+      fi
+
+      # 5. Init Tools
+      command -v starship >/dev/null && eval "$(starship init zsh)"
+      command -v direnv >/dev/null && eval "$(direnv hook zsh)"
     '';
   };
 }

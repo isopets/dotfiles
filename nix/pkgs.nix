@@ -34,5 +34,6 @@
     # --- Fonts ---
     (nerdfonts.override { fonts = [ "Hack" ]; })
     yq
+    hello
   ];
 }
