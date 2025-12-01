@@ -1,11 +1,6 @@
 { config, pkgs, ... }:
 
 {
-  # --- 1. Zsh (Immutable ZshRC) ---
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-    
     # 最終修正: initExtra に .zshrc の全ロジックを直接埋め込む
     initExtra = ''
       export DOTFILES="$HOME/dotfiles"

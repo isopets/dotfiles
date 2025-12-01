@@ -345,3 +345,4 @@ code --install-extension zhuangtongfa.material-theme
 code --install-extension zignd.html-css-class-completion
 code --install-extension zobo.php-intellisense
 code --install-extension zxh404.vscode-proto3
+code --install-extension bbenoist.nix
