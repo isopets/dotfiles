@@ -1,11 +1,10 @@
-# 引数に pkgs-unstable を追加し、両方使えるようにする
-{ pkgs, pkgs-unstable, ... }:
+{ pkgs, ... }:
 
 {
   home.packages = with pkgs; [
     # --- Nix Support ---
     nh
-    nixfmt-rfc-style  # formatter
+    nixfmt-rfc-style
     
     # --- Core Tools ---
     eza           # ls replacement
@@ -17,6 +16,12 @@
     starship      # Prompt
     mise          # Language manager
     
+    # --- Cockpit Extensions (New!) ---
+    gh            # GitHub CLI (Control Tower)
+    glow          # Markdown Viewer (Document Viewer)
+    jless         # JSON Viewer (Data Scope)
+    serpl         # Safe Search & Replace (Refactor)
+
     # --- Utilities ---
     jq            # JSON processor
     gnused        # GNU sed
@@ -35,7 +40,5 @@
     # --- Fonts ---
     (nerdfonts.override { fonts = [ "Hack" ]; })
     yq
-    hello
-    pkgs-unstable.just
   ];
 }
