@@ -15,17 +15,19 @@
   
   # --- Packages ---
   home.packages = with pkgs; [
-    zsh-fzf-tab
+   zsh-fzf-tab
     trash-cli
     shellcheck
     shfmt
     zellij
     bottom
-    
-    # [NEW] Pre-commit Framework
     pre-commit
+    just
+    nvd 
 
     pkgs-unstable.sheldon 
     pkgs-unstable.bitwarden-cli
+    pkgs-unstable.yazi
+    pkgs-unstable.navi
   ];
 }

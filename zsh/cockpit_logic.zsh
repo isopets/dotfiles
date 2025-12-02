@@ -9,6 +9,7 @@ setopt +o nomatch
 setopt interactivecomments
 
 # --- 2. Safety First ---
+# 事故防止のため rm をブロックし、del (trash-put) を推奨
 alias rm="echo '⛔️ Use \"del\" (trash) or \"/bin/rm\"'; false"
 alias del="trash-put"
 
@@ -32,21 +33,16 @@ function p() {
     if [ -n "$n" ]; then
         cd "$HOME/PARA/1_Projects/$n"
         echo "📂 Moved to: $n"
-        # 中身をチラ見せ
         if command -v eza >/dev/null; then eza --icons; else ls; fi
     fi
 }
 
 ## Morning Briefing (Dashboard 2.0)
 function briefing() {
-    echo ""
-    gum style --foreground 214 --bold --border double --padding "0 2" --align center "☀️  MORNING BRIEFING"
-    echo ""
+    echo ""; gum style --foreground 214 --bold --border double --padding "0 2" --align center "☀️  MORNING BRIEFING"; echo ""
     
-    # 1. System Health
     gum style --foreground 39 "📉 System Status:"
     if command -v btm >/dev/null; then
-        # bottom の簡易表示 (実際は対話型なので、ここではuptimeなどを表示)
         uptime | sed 's/^.*up/Up:/' | sed 's/,.*//' 
         top -l 1 | grep "CPU usage" | awk '{print "CPU: " $3 " user, " $5 " sys"}'
     else
@@ -54,16 +50,12 @@ function briefing() {
     fi
     echo ""
 
-    # 2. Cockpit Status
     gum style --foreground 208 "🐙 Cockpit Git Status:"
     if [ -d "$HOME/dotfiles" ]; then
-        git -C "$HOME/dotfiles" status -s
-        local branch=$(git -C "$HOME/dotfiles" branch --show-current)
-        echo "Branch: $branch"
+        git -C "$HOME/dotfiles" status -s -b
     fi
     echo ""
 
-    # 3. Active Projects
     gum style --foreground 150 "🔥 Active Projects:"
     ls "$HOME/PARA/1_Projects" 2>/dev/null | head -n 5
     echo ""
@@ -72,44 +64,32 @@ function briefing() {
     echo ""
 }
 
-# --- 🧠 Contextual AI (RAG-lite) ---
+# --- 5. Contextual AI & Time Travel ---
 
+## Ask Project (Chat with Codebase)
 function ask-project() {
     local q="$1"
     if [ -z "$q" ]; then echo "Usage: ask-project 'question'"; return 1; fi
     
-    # プロジェクト内チェック
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         echo "❌ Not in a git project."
         return 1
     fi
 
     echo "🤖 Reading codebase..."
-    
-    # git管理下のテキストファイルのみを収集 (バイナリやlockファイルを除外)
-    # 巨大すぎる場合は制限をかけるロジックが必要だが、Gemini 2.0ならある程度いける
     local context=$(git ls-files | xargs -I {} sh -c 'file -b --mime-type "{}" | grep -q "text" && echo "\n--- {} ---\n" && cat "{}"' 2>/dev/null)
     
-    if [ -z "$context" ]; then
-        echo "❌ No text files found."
-        return 1
-    fi
+    if [ -z "$context" ]; then echo "❌ No text files found."; return 1; fi
     
     local prompt="You are a lead developer. Answer the question based on the following codebase context.\n\nQuestion: $q\n\nCodebase:\n$context"
     
-    # ask関数を経由してGeminiに投げる
-    # (トークン量が多いため、少し時間がかかる場合があります)
-    echo "🤖 Analyzing project structure (sending context)..."
+    echo "🤖 Analyzing project structure..."
     ask "$prompt"
 }
 
-# --- 📸 Micro-Snapshots (Time Travel) ---
-
+## Take Snapshot (Micro-Backup)
 function snapshot() {
-    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "❌ Not in a git project."
-        return 1
-    fi
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then echo "❌ Not in a git project."; return 1; fi
 
     local root=$(git rev-parse --show-toplevel)
     local snap_dir="$root/.snapshots"
@@ -117,22 +97,18 @@ function snapshot() {
     local dest="$snap_dir/snap_$timestamp"
 
     mkdir -p "$dest"
-    
     echo "📸 Taking snapshot..."
-    
-    # rsyncで高速バックアップ (.git, .snapshots, node_modules 除外)
     rsync -av --exclude '.git' --exclude '.snapshots' --exclude 'node_modules' --exclude 'target' --exclude 'dist' "$root/" "$dest/" >/dev/null
-    
     echo "✅ Snapshot saved to: .snapshots/snap_$timestamp"
 }
 
+## Restore Snapshot
 function restore-snapshot() {
     local root=$(git rev-parse --show-toplevel)
     local snap_dir="$root/.snapshots"
     
     if [ ! -d "$snap_dir" ]; then echo "❌ No snapshots found."; return 1; fi
     
-    # スナップショットを選択
     local target=$(ls "$snap_dir" | fzf --prompt="🕰️ Select Snapshot to Restore > " --layout=reverse)
     
     if [ -n "$target" ]; then
@@ -144,7 +120,52 @@ function restore-snapshot() {
     fi
 }
 
-# --- 5. Auto-Generating Guide ---
+# --- 6. Migration & Gatekeeper ---
+
+## Migrate Brew to Nix (Smart)
+function migrate-tools() {
+    if ! command -v brew >/dev/null; then echo "❌ Homebrew not found."; return 1; fi
+    
+    echo "🔍 Scanning Homebrew Leaves..."
+    local brew_leaves=$(brew leaves --installed-on-request)
+    
+    if [ -z "$brew_leaves" ]; then echo "✨ No Brew formulas to migrate."; return 0; fi
+
+    echo "📦 Select tools to MIGRATE (Space to select):"
+    local selected=$(echo "$brew_leaves" | gum choose --no-limit --height 15)
+    
+    if [ -z "$selected" ]; then echo "👋 Canceled."; return 0; fi
+
+    echo "🚚 Migrating selected tools..."
+    echo "$selected" | while read pkg; do
+        if [ -n "$pkg" ]; then
+            # nix-add に "auto" オプションを渡して自動判断させる
+            nix-add "$pkg" "auto"
+        fi
+    done
+    
+    echo ""
+    gum style --foreground 214 "🎉 Migration scripts generated!"
+    echo "To remove migrated tools from Brew, run:"
+    echo "  brew uninstall $selected"
+}
+
+# Brew Wrapper (Gatekeeper - Optional)
+# function brew() {
+#    local cmd="$1"
+#    if [ "$cmd" = "install" ] && [[ "$*" != *"--cask"* ]]; then
+#        gum style --foreground 208 "⚠️  HOLD ON!"
+#        echo "You are trying to install a CLI tool via Homebrew."
+#        if gum confirm "Use 'nix-add' instead? (Recommended)"; then
+#            local pkg="${@: -1}"
+#            nix-add "$pkg"
+#            return
+#        fi
+#    fi
+#    /opt/homebrew/bin/brew "$@" || /usr/local/bin/brew "$@"
+# }
+
+# --- 7. Auto-Generating Guide ---
 function guide() {
     echo ""
     gum style --foreground 214 --bold --border double --padding "0 2" "🧭 COCKPIT HUD (Auto-Generated)"
@@ -168,36 +189,7 @@ function guide() {
     echo "  Tab        : Completion (FZF)"
 }
 
-# --- ⚡️ Quick Capture ---
-function log() {
-    local msg="$*"
-    if [ -z "$msg" ]; then echo "Usage: log 'message'"; return 1; fi
-
-    local timestamp=$(date '+%H:%M')
-    
-    # プロジェクト内にいる場合
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        local root=$(git rev-parse --show-toplevel)
-        local logfile="$root/docs/DEV_LOG.md"
-        
-        if [ ! -f "$logfile" ]; then
-            mkdir -p "$root/docs"
-            echo "# Dev Log" > "$logfile"
-        fi
-        
-        # 追記
-        echo "- [$timestamp] $msg" >> "$logfile"
-        echo "✅ Logged to project: $msg"
-        
-    else
-        # グローバルの場合 (Inboxへ)
-        local inbox="$HOME/PARA/0_Inbox/quick_notes.md"
-        echo "- [$(date '+%Y-%m-%d %H:%M')] $msg" >> "$inbox"
-        echo "✅ Logged to Inbox: $msg"
-    fi
-}
-
-# --- 6. Definitions (Guide Menu) ---
+# --- 8. Definitions (Guide Menu) ---
 
 ## Morning Briefing
 alias b="briefing"
@@ -223,6 +215,15 @@ alias e="edit"
 ## Ask AI
 alias a="ask"
 
+## Ask Project
+alias ap="ask-project"
+
+## Snapshot
+alias snap="snapshot"
+
+## Restore Snap
+alias snap-restore="restore-snapshot"
+
 ## Git Cockpit
 alias g="lazygit"
 
@@ -235,10 +236,13 @@ alias check="audit"
 ## Archive Project
 alias arc="archive"
 
+## Migrate Tools
+alias mig="migrate-tools"
+
 ## Reload
 alias sz="exec zsh"
 
-# --- 7. Loader ---
+# --- 9. Loader ---
 [ -f "$DOTFILES/.env" ] && source "$DOTFILES/.env"
 
 if [ -d "$DOTFILES/zsh/functions" ]; then
@@ -247,6 +251,6 @@ if [ -d "$DOTFILES/zsh/functions" ]; then
   done
 fi
 
-# --- 8. Init ---
+# --- 10. Init ---
 command -v starship >/dev/null && eval "$(starship init zsh)"
 command -v direnv >/dev/null && eval "$(direnv hook zsh)"
