@@ -22,12 +22,17 @@
     zellij
     bottom
     pre-commit
-    just
     nvd 
 
-    pkgs-unstable.sheldon 
-    pkgs-unstable.bitwarden-cli
+   # [NEW] Visual & Knowledge
     pkgs-unstable.yazi
     pkgs-unstable.navi
+
+    # Unstable Tools
+    pkgs-unstable.sheldon 
+    pkgs-unstable.bitwarden-cli
+    
+    # 🚀 最新版の Just を使う
+    pkgs-unstable.just
   ];
 }
