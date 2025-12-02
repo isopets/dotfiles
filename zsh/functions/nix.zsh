@@ -123,6 +123,27 @@ function nix-up() {
         gum style --foreground 196 "❌ Update Failed."
         return 1
     fi
+
+    # 3. Apply
+    echo "🚀 Updating Cockpit System (Darwin)..."
+    
+    # nh で darwin をビルドするコマンドに変更
+    if nh darwin switch "$dir"; then
+        echo "☁️  Syncing to GitHub..."
+        git -C "$dir" push origin main 2>/dev/null
+        gum style --foreground 82 "✅ Update Complete! Reloading..."
+        
+        # 必要に応じて Yabai をリロード
+        if command -v yabai >/dev/null; then
+            echo "🪟 Reloading Yabai..."
+            yabai --restart-service
+        fi
+
+        sz
+    else
+        gum style --foreground 196 "❌ Update Failed."
+        return 1
+    fi
 }
 
 # --- Shortcuts ---

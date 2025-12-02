@@ -42,5 +42,7 @@
     # --- Fonts ---
     (nerdfonts.override { fonts = [ "Hack" ]; })
     yq
+    colima # Container Runtime
+    docker # CLI Tool
   ];
 }
