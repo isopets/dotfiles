@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, pkgs-unstable, ... }:
 
 {
   home.packages = with pkgs; [
@@ -16,11 +16,13 @@
     starship      # Prompt
     mise          # Language manager
     
-    # --- Cockpit Extensions (New!) ---
-    gh            # GitHub CLI (Control Tower)
-    glow          # Markdown Viewer (Document Viewer)
-    jless         # JSON Viewer (Data Scope)
-    serpl         # Safe Search & Replace (Refactor)
+    # --- Cockpit Extensions (Modern Tools) ---
+    gh            # GitHub CLI
+    glow          # Markdown Viewer
+    
+    # 🚨 Unstable から取得 (Stableにはまだないため)
+    pkgs-unstable.jless  # JSON Viewer
+    pkgs-unstable.serpl  # Safe Search & Replace
 
     # --- Utilities ---
     jq            # JSON processor
