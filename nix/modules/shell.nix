@@ -82,6 +82,10 @@
     # Workspace & Monitor
     zellij        # ターミナルマルチプレクサ (不死身のセッション)
     bottom        # システムリソースモニター (btm)
+
+    # --- Containerization (Docker without Desktop) ---
+    colima  # The Container Runtime
+    docker  # The CLI Tool
     
     # --- Bleeding Edge Tools (From Unstable Channel) ---
     # 最新機能を使うため、意図的にUnstableチャンネルから導入

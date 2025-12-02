@@ -290,6 +290,24 @@ alias n="navi"
 ## Reload
 alias sz="exec zsh"
 
+# --- 🐳 Smart Docker Wrapper ---
+# docker コマンド実行時、Colimaが動いてなければ自動起動する
+function docker() {
+    # colima が停止しているかチェック
+    if command -v colima >/dev/null && ! colima status >/dev/null 2>&1; then
+        gum style --foreground 214 "🐳 Docker daemon is stopped. Starting Colima..."
+        # CPU/メモリ設定は自動調整 (必要なら --cpu 2 --memory 4 等を追加)
+        colima start --cpu 2 --memory 4
+        gum style --foreground 82 "✅ Colima started."
+    fi
+    # 本物の docker コマンドを実行
+    command docker "$@"
+}
+
+# エイリアス
+alias dk="docker"
+alias dc="docker-compose"
+
 # --- 9. Loader & Init ---
 [ -f "$DOTFILES/.env" ] && source "$DOTFILES/.env"
 

@@ -11,7 +11,8 @@
     ./nix/modules/shell.nix
     ./nix/modules/zsh.nix
     ./nix/modules/vscode.nix
-    ./nix/modules/neovim.nix  # <--- NEW!
+    ./nix/modules/neovim.nix
+    ./nix/modules/window_manager.nix
   ];
 
   # ★ここを削除しました (もう手動退避するので不要)
