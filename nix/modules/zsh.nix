@@ -7,30 +7,29 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
 
-    # --- 🛡️ Immutable Infrastructure Aliases ---
-    # ここには「ツールの置き換え」や「安全装置」のみを定義する
+    # Nix管理の不変エイリアス
     shellAliases = {
-      # Modern Core Utils (Nixで入れたツールへの紐付け)
       ls = "eza --icons --git";
       cat = "bat";
       grep = "rg";
       find = "fd";
-      
-      # Editor Force
       vi = "nvim";
       vim = "nvim";
-      
-      # Safety Nets (事故防止)
       cp = "cp -i";
       mv = "mv -i";
-      # rm は cockpit_logic.zsh で関数として制御しているため、ここでは定義しない
-      # (あるいは rm = "trash-put" とここで強制しても良い)
     };
 
-    # 🚨 最終形態: 全てを Sheldon に任せる
+    # 🚨 修正: Sheldonを使わず、直接ファイルを読み込む (最も確実)
     initExtra = ''
-      # Sheldon Init
-      eval "$(sheldon source)"
+      # 1. FZF-Tab Integration
+      source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
+
+      # 2. Load Cockpit Logic (Direct Link)
+      if [ -f "$HOME/dotfiles/zsh/cockpit_logic.zsh" ]; then
+        source "$HOME/dotfiles/zsh/cockpit_logic.zsh"
+      else
+        echo "⚠️ Cockpit Logic not found!"
+      fi
     '';
   };
 }

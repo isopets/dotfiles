@@ -46,7 +46,7 @@
     userName = "isopets";
     userEmail = "jandp.0717@gmail.com";
     
-    # Delta: Gitの差分をGitHubのように美しく表示
+    # 🚨 修正: delta の設定方法が変わりました
     delta = {
       enable = true;
       options = {

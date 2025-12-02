@@ -1,35 +1,40 @@
 { config, pkgs, ... }:
 
 {
+  # 🚨 必須: システムのプライマリユーザーを定義 (最新のNix-Darwinで必須)
+  # ここを設定することで、yabai や defaults 設定がこのユーザーに適用されます
+  users.users.isogaiyuto = {
+    name = "isogaiyuto";
+    home = "/Users/isogaiyuto";
+  };
+  
+  # 🚨 追加: これがないと "system activation must be run as root" エラーの後にコケます
+  # (警告メッセージにあった通り、ここを明示します)
+  system.primaryUser = "isogaiyuto";
+
   # --- 1. System Defaults (macOSの隠し設定) ---
   system.defaults = {
-    # Dockの設定
     dock = {
-      autohide = true;           # 自動的に隠す
-      show-recents = false;      # 最近使ったアプリを表示しない
-      mru-spaces = false;        # 操作スペースを勝手に並べ替えない (Yabaiに必須)
+      autohide = true;
+      show-recents = false;
+      mru-spaces = false;
     };
-    
-    # Finderの設定
     finder = {
-      AppleShowAllExtensions = true; # 拡張子を常に表示
-      FXPreferredViewStyle = "clmv"; # カラムビューをデフォルトに
-      _FXShowPosixPathInTitle = true; # タイトルバーにパスを表示
+      AppleShowAllExtensions = true;
+      FXPreferredViewStyle = "clmv";
+      _FXShowPosixPathInTitle = true;
     };
-    
-    # トラックパッドとキーボード
     NSGlobalDomain = {
-      "com.apple.trackpad.scaling" = 3.0; # 軌跡の速さ
-      KeyRepeat = 2;  # キーリピート速度 (速い)
+      "com.apple.trackpad.scaling" = 3.0;
+      KeyRepeat = 2;
       InitialKeyRepeat = 15;
     };
   };
 
-  # --- 2. Window Manager (Yabai & skhd as Services) ---
-  # Nix-Darwinなら "services" として安定稼働させられる
+  # --- 2. Window Manager (Yabai & skhd) ---
   services.yabai = {
     enable = true;
-    enableScriptingAddition = true; # SIP無効化環境ならTrue、そうでなければFalse
+    enableScriptingAddition = true; 
     config = {
       layout = "bsp";
       top_padding = 10;
@@ -44,29 +49,27 @@
   services.skhd = {
     enable = true;
     skhdConfig = ''
-      # Focus Window
       alt - h : yabai -m window --focus west
       alt - j : yabai -m window --focus south
       alt - k : yabai -m window --focus north
       alt - l : yabai -m window --focus east
-      
-      # Swap Window
       shift + alt - h : yabai -m window --swap west
       shift + alt - j : yabai -m window --swap south
       shift + alt - k : yabai -m window --swap north
       shift + alt - l : yabai -m window --swap east
-      
-      # Toggle Float
       alt - space : yabai -m window --toggle float
-      
-      # Launch Terminal
       alt - return : open -a "Terminal"
     '';
   };
 
-  # --- 3. Nix-Darwin Core ---
-  # 必須設定: Nixデーモンの管理を有効化
-  services.nix-daemon.enable = true;
-  # 必須設定: この設定が適用された時点のState Version
+  # --- 3. Nix Core ---
+  # ❌ 削除: services.nix-daemon.enable = true; (廃止されたため削除)
+  
+  # Nix設定の有効化
+  nix.enable = true;
+  
+  # 実験的機能の有効化 (Flakesに必須)
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   system.stateVersion = 5;
 }
