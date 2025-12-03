@@ -3,8 +3,6 @@
 {
   programs.vscode = {
     enable = true;
-
-    # 🚨 修正: profiles.default.userSettings に変更
     profiles.default.userSettings = {
       "terminal.integrated.shellIntegration.enabled" = false;
       "terminal.integrated.sendKeybindingsToShell" = true;

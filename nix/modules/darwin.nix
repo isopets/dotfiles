@@ -5,10 +5,9 @@
     name = "isogaiyuto";
     home = "/Users/isogaiyuto";
   };
-  nixpkgs.config.allowUnfree = true;
+  
   system.primaryUser = "isogaiyuto";
 
-  # --- 1. System Defaults ---
   system.defaults = {
     dock = {
       autohide = true;
@@ -27,7 +26,6 @@
     };
   };
 
-  # --- 2. Homebrew Integration (App Install) ---
   homebrew = {
     enable = true;
     onActivation = {
@@ -35,16 +33,16 @@
       cleanup = "zap"; 
       upgrade = true;
     };
-    taps = [
-      "nikitabobko/tap"
-    ];
-    casks = [
-      "aerospace"
-    ];
+    taps = [ "nikitabobko/tap" ];
+    casks = [ "aerospace" ];
   };
 
-  # --- 3. Nix Core ---
   nix.enable = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  
+  # Auto Optimise
+  nix.settings.auto-optimise-store = true;
+  nix.optimise.automatic = true;
+  
   system.stateVersion = 5;
 }

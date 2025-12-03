@@ -1,25 +1,6 @@
-# =================================================================
-# 🛠️ Utility Functions (Minimal Repair Version)
-# =================================================================
-
-function sz() {
-    echo "🔄 Reloading Shell..."
-    exec zsh
+function _self-clean() {
+    for f in "$HOME/dotfiles/zsh/"{functions,config}/*.zsh; do
+        [ -f "$f" ] && tr -cd '\11\12\40-\176' < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+    done
 }
-
-function rules() {
-    code "$HOME/dotfiles/docs/WORKFLOW.md"
-}
-
-function dot-doctor() {
-    echo "🚑 System Check..."
-    command -v fzf >/dev/null && echo "✅ fzf" || echo "❌ fzf"
-}
-
-function guide() {
-    echo "🧭 GUIDE: Run 'sz' to reload, then 'nix-up' to sync."
-}
-
-function brain() {
-    echo "🧠 Brain module is temporarily disabled for repair."
-}
+function sz() { _self-clean; exec zsh; }
