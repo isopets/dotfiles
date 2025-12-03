@@ -7,42 +7,42 @@
     nixfmt-rfc-style
     
     # --- Core Tools ---
-    eza           # ls replacement
-    bat           # cat replacement
-    zoxide        # cd replacement
-    fzf           # Fuzzy finder
-    lazygit       # Git TUI
-    direnv        # Environment switcher
-    starship      # Prompt
-    mise          # Language manager
+    eza
+    bat
+    zoxide
+    fzf
+    lazygit
+    direnv
+    starship
+    mise
     
-    # --- Cockpit Extensions (Modern Tools) ---
-    gh            # GitHub CLI
-    glow          # Markdown Viewer
+    # --- Cockpit Extensions ---
+    gh
+    glow
     
-    # 🚨 Unstable から取得 (Stableにはまだないため)
-    pkgs-unstable.jless  # JSON Viewer
-    pkgs-unstable.serpl  # Safe Search & Replace
+    # Unstable Tools
+    pkgs-unstable.jless
+    pkgs-unstable.serpl
 
     # --- Utilities ---
-    jq            # JSON processor
-    gnused        # GNU sed
-    ripgrep       # Fast grep
-    fd            # Fast find
-    gnupg         # GPG
+    jq
+    gnused
+    ripgrep
+    fd
+    gnupg
     
     # --- AI & Security ---
-    snyk          # Security scanner
-    trivy         # Vulnerability scanner
-    gum           # UI Library for scripts
+    snyk
+    trivy
+    gum
     
     # --- Python/Dev ---
-    uv            # Python tool manager
+   # uv
 
-    # --- Fonts ---
-    (nerdfonts.override { fonts = [ "Hack" ]; })
+    # --- Fonts (Modernized) ---
+    # 🚨 修正: 古い nerdfonts を削除し、新しい nerd-fonts セットを使用
+    nerd-fonts.hack
+    
     yq
-    colima # Container Runtime
-    docker # CLI Tool
   ];
 }
