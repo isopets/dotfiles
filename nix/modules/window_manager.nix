@@ -1,14 +1,10 @@
 { config, pkgs, ... }:
 
-let
-  # ラッパーアプリ内の実行スクリプトを直接指定
-  yabaiScript = "${config.home.homeDirectory}/Applications/yabai-wrapper.app/Contents/MacOS/yabai-wrapper";
-  skhdScript = "${config.home.homeDirectory}/Applications/skhd-wrapper.app/Contents/MacOS/skhd-wrapper";
-in
 {
+  # 1. コマンド自体は使えるようにしておく
   home.packages = [ pkgs.yabai pkgs.skhd ];
 
-  # .yabairc (設定)
+  # 2. 設定ファイル (.yabairc)
   home.file.".yabairc" = {
     executable = true;
     text = ''
@@ -26,7 +22,7 @@ in
     '';
   };
 
-  # .skhdrc (キーバインド)
+  # 3. キーバインド (.skhdrc)
   home.file.".skhdrc".text = ''
       alt - h : yabai -m window --focus west
       alt - j : yabai -m window --focus south
@@ -41,26 +37,32 @@ in
       shift + alt - r : launchctl kickstart -k gui/${toString config.home.uid}/org.nixos.yabai
   '';
 
-  # サービス定義 (ラッパーを起動)
+  # 4. サービス定義 (ここが最重要！！固定パスを指定)
   launchd.agents.yabai = {
     enable = true;
     config = {
-      ProgramArguments = [ "${yabaiScript}" ];
+      ProgramArguments = [ "/usr/local/bin/yabai-signed" ];
       KeepAlive = true;
       RunAtLoad = true;
       StandardErrorPath = "/tmp/yabai.err";
       StandardOutPath = "/tmp/yabai.out";
+      EnvironmentVariables = {
+        PATH = "${pkgs.yabai}/bin:${config.home.profileDirectory}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+      };
     };
   };
 
   launchd.agents.skhd = {
     enable = true;
     config = {
-      ProgramArguments = [ "${skhdScript}" ];
+      ProgramArguments = [ "/usr/local/bin/skhd-signed" ];
       KeepAlive = true;
       RunAtLoad = true;
       StandardErrorPath = "/tmp/skhd.err";
       StandardOutPath = "/tmp/skhd.out";
+      EnvironmentVariables = {
+        PATH = "${pkgs.skhd}/bin:${config.home.profileDirectory}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+      };
     };
   };
 }
