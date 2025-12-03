@@ -41,8 +41,6 @@
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   
   # Auto Optimise
-  nix.settings.auto-optimise-store = true;
   nix.optimise.automatic = true;
-  
   system.stateVersion = 5;
 }

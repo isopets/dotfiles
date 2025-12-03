@@ -2,17 +2,18 @@
   description = "Cockpit Darwin System";
 
   inputs = {
-    # Stable (Base OS)
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-24.05-darwin";
-    # Unstable (Bleeding Edge Tools)
+    # 🚀 Base OS: Unstable (常に最新)
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    
+    # 📦 Tools: Baseと同じものを指す
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     
-    # Nix-Darwin (The OS Manager)
-    nix-darwin.url = "github:LnL7/nix-darwin";
+    # 🍏 Nix-Darwin: Master (最新のmacOSに対応)
+    nix-darwin.url = "github:LnL7/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     
-    # Home Manager (The User Manager)
-    home-manager.url = "github:nix-community/home-manager/release-24.05";
+    # 🏠 Home Manager: Master (最新のNixpkgsに対応)
+    home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -20,7 +21,7 @@
   let
     system = "aarch64-darwin"; # Apple Silicon
     
-    # Unstable Packages
+    # Unstableパッケージセット
     pkgs-unstable = import nixpkgs-unstable {
       inherit system;
       config.allowUnfree = true;
@@ -28,7 +29,7 @@
   in
   {
     darwinConfigurations = {
-      # Hostname
+      # Hostname: isogaiyuujinnoMacBook-Air
       "isogaiyuujinnoMacBook-Air" = nix-darwin.lib.darwinSystem {
         inherit system;
         
