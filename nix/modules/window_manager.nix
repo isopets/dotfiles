@@ -1,12 +1,7 @@
 { config, pkgs, ... }:
 
-let
-  # ラッパーアプリのパス定義
-  yabaiWrapper = "${config.home.homeDirectory}/Applications/yabai-wrapper.app/Contents/MacOS/yabai-wrapper";
-  skhdWrapper = "${config.home.homeDirectory}/Applications/skhd-wrapper.app/Contents/MacOS/skhd-wrapper";
-in
 {
-  # 1. パッケージのインストール
+  # 1. パッケージのインストール (コマンド自体は使えるようにしておく)
   home.packages = [
     pkgs.yabai
     pkgs.skhd
@@ -24,6 +19,7 @@ in
       yabai -m config right_padding 10
       yabai -m config window_gap 10
       yabai -m config mouse_follows_focus on
+      
       # 除外アプリ
       yabai -m rule --add app="^System Settings$" manage=off
       yabai -m rule --add app="^Raycast$" manage=off
@@ -43,16 +39,18 @@ in
       shift + alt - l : yabai -m window --swap east
       alt - space : yabai -m window --toggle float
       alt - return : open -a "Terminal"
+      
+      # 固定バイナリを使って再起動
       shift + alt - r : launchctl kickstart -k gui/${toString config.home.uid}/org.nixos.yabai
   '';
 
-  # 4. サービスの定義 (ラッパーアプリを起動する)
-  # 以前の services.yabai.enable = true は削除し、自前でLaunchAgentを定義します。
+  # 4. サービスの定義 (固定バイナリを起動する)
   
   launchd.agents.yabai = {
     enable = true;
     config = {
-      ProgramArguments = [ "${yabaiWrapper}" ];
+      # 🚨 ここが重要: Nixのパスではなく、固定パスを指定
+      ProgramArguments = [ "/usr/local/bin/yabai-signed" ];
       KeepAlive = true;
       RunAtLoad = true;
       StandardErrorPath = "/tmp/yabai.err";
@@ -66,7 +64,8 @@ in
   launchd.agents.skhd = {
     enable = true;
     config = {
-      ProgramArguments = [ "${skhdWrapper}" ];
+      # 🚨 ここも固定パス
+      ProgramArguments = [ "/usr/local/bin/skhd-signed" ];
       KeepAlive = true;
       RunAtLoad = true;
       StandardErrorPath = "/tmp/skhd.err";
