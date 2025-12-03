@@ -1,7 +1,6 @@
 { config, pkgs, ... }:
 
 {
-  nixpkgs.config.allowUnfree = true;
   
   imports = [ 
     ./nix/pkgs.nix

@@ -5,7 +5,7 @@
     name = "isogaiyuto";
     home = "/Users/isogaiyuto";
   };
-  
+  nixpkgs.config.allowUnfree = true;
   system.primaryUser = "isogaiyuto";
 
   # --- 1. System Defaults ---
