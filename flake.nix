@@ -36,7 +36,13 @@
         specialArgs = { inherit inputs pkgs-unstable; };
         
         modules = [
+          # 1. OS設定
           ./nix/modules/darwin.nix
+          
+          # 🚨 追加: ここで読み込む！
+          ./nix/modules/window_manager.nix
+          
+          # 2. ユーザー設定
           home-manager.darwinModules.home-manager
           {
             home-manager.useGlobalPkgs = true;

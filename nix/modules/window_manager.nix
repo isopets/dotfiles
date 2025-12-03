@@ -2,29 +2,33 @@
 
 {
   # --- 1. Install AeroSpace (via Homebrew Cask) ---
-  # Nixpkgsにまだないため、DarwinのBrew連携機能を使用
   homebrew = {
     enable = true;
+    
     onActivation = {
       autoUpdate = true;
-      cleanup = "zap"; # 記述されていないアプリは削除する（強力な管理）
+      cleanup = "zap"; # 記述されていないアプリは削除 (強力な同期)
+      upgrade = true;
     };
+    
+    # Tap (リポジトリ) の登録
+    taps = [
+      "nikitabobko/tap"
+    ];
+    
+    # Cask (アプリ) のインストール
     casks = [
-      "nikitabobko/tap/aerospace"
+      "aerospace"
     ];
   };
 
   # --- 2. Configure AeroSpace (TOML) ---
-  # 設定ファイルはホームディレクトリに配置
+  # 設定ファイルをホームディレクトリに生成
   home.file.".config/aerospace/aerospace.toml".text = ''
-    # ✈️ AeroSpace Config (i3-like Keybindings)
+    # ✈️ AeroSpace Config (Cockpit Style)
 
     # Start automatically
     after-login-command = []
-
-    # Normalizations
-    enable-normalization-flatten-containers = true
-    enable-normalization-opposite-orientation-for-nested-containers = true
 
     # Gaps (見た目の余白)
     [gaps]
@@ -38,35 +42,35 @@
     # Keybindings (Alt = Option)
     [mode.main.binding]
     
-    # 1. Focus (移動) - Vim Style
+    # Focus (移動) - Vim Style
     alt-h = 'focus left'
     alt-j = 'focus down'
     alt-k = 'focus up'
     alt-l = 'focus right'
 
-    # 2. Move (入替)
+    # Move (入替)
     alt-shift-h = 'move left'
     alt-shift-j = 'move down'
     alt-shift-k = 'move up'
     alt-shift-l = 'move right'
 
-    # 3. Resize (リサイズモードへ)
+    # Resize
     alt-r = 'mode resize'
 
-    # 4. Workspace (1-9)
+    # Workspaces
     alt-1 = 'workspace 1'
     alt-2 = 'workspace 2'
     alt-3 = 'workspace 3'
     alt-4 = 'workspace 4'
     
-    # 5. Layout
+    # Layout
     alt-slash = 'layout tiles horizontal vertical'
     alt-comma = 'layout accordion horizontal vertical'
     
-    # 6. System
+    # System
     alt-enter = 'exec-and-forget open -a Terminal'
 
-    # --- Resize Mode ---
+    # Resize Mode
     [mode.resize.binding]
     h = 'resize width -50'
     j = 'resize height +50'
