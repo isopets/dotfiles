@@ -1,68 +1,78 @@
 { config, pkgs, ... }:
 
 {
-  # 1. コマンド自体は使えるようにしておく
-  home.packages = [ pkgs.yabai pkgs.skhd ];
-
-  # 2. 設定ファイル (.yabairc)
-  home.file.".yabairc" = {
-    executable = true;
-    text = ''
-      #!/usr/bin/env sh
-      yabai -m config layout bsp
-      yabai -m config top_padding 10
-      yabai -m config bottom_padding 10
-      yabai -m config left_padding 10
-      yabai -m config right_padding 10
-      yabai -m config window_gap 10
-      yabai -m config mouse_follows_focus on
-      yabai -m rule --add app="^System Settings$" manage=off
-      yabai -m rule --add app="^Raycast$" manage=off
-      echo "✅ Yabai config loaded."
-    '';
+  # --- 1. Install AeroSpace (via Homebrew Cask) ---
+  # Nixpkgsにまだないため、DarwinのBrew連携機能を使用
+  homebrew = {
+    enable = true;
+    onActivation = {
+      autoUpdate = true;
+      cleanup = "zap"; # 記述されていないアプリは削除する（強力な管理）
+    };
+    casks = [
+      "nikitabobko/tap/aerospace"
+    ];
   };
 
-  # 3. キーバインド (.skhdrc)
-  home.file.".skhdrc".text = ''
-      alt - h : yabai -m window --focus west
-      alt - j : yabai -m window --focus south
-      alt - k : yabai -m window --focus north
-      alt - l : yabai -m window --focus east
-      shift + alt - h : yabai -m window --swap west
-      shift + alt - j : yabai -m window --swap south
-      shift + alt - k : yabai -m window --swap north
-      shift + alt - l : yabai -m window --swap east
-      alt - space : yabai -m window --toggle float
-      alt - return : open -a "Terminal"
-      shift + alt - r : launchctl kickstart -k gui/${toString config.home.uid}/org.nixos.yabai
+  # --- 2. Configure AeroSpace (TOML) ---
+  # 設定ファイルはホームディレクトリに配置
+  home.file.".config/aerospace/aerospace.toml".text = ''
+    # ✈️ AeroSpace Config (i3-like Keybindings)
+
+    # Start automatically
+    after-login-command = []
+
+    # Normalizations
+    enable-normalization-flatten-containers = true
+    enable-normalization-opposite-orientation-for-nested-containers = true
+
+    # Gaps (見た目の余白)
+    [gaps]
+    inner.horizontal = 10
+    inner.vertical =   10
+    outer.left =       10
+    outer.bottom =     10
+    outer.top =        10
+    outer.right =      10
+
+    # Keybindings (Alt = Option)
+    [mode.main.binding]
+    
+    # 1. Focus (移動) - Vim Style
+    alt-h = 'focus left'
+    alt-j = 'focus down'
+    alt-k = 'focus up'
+    alt-l = 'focus right'
+
+    # 2. Move (入替)
+    alt-shift-h = 'move left'
+    alt-shift-j = 'move down'
+    alt-shift-k = 'move up'
+    alt-shift-l = 'move right'
+
+    # 3. Resize (リサイズモードへ)
+    alt-r = 'mode resize'
+
+    # 4. Workspace (1-9)
+    alt-1 = 'workspace 1'
+    alt-2 = 'workspace 2'
+    alt-3 = 'workspace 3'
+    alt-4 = 'workspace 4'
+    
+    # 5. Layout
+    alt-slash = 'layout tiles horizontal vertical'
+    alt-comma = 'layout accordion horizontal vertical'
+    
+    # 6. System
+    alt-enter = 'exec-and-forget open -a Terminal'
+
+    # --- Resize Mode ---
+    [mode.resize.binding]
+    h = 'resize width -50'
+    j = 'resize height +50'
+    k = 'resize height -50'
+    l = 'resize width +50'
+    enter = 'mode main'
+    esc = 'mode main'
   '';
-
-  # 4. サービス定義 (ここが最重要！！固定パスを指定)
-  launchd.agents.yabai = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "/usr/local/bin/yabai-signed" ];
-      KeepAlive = true;
-      RunAtLoad = true;
-      StandardErrorPath = "/tmp/yabai.err";
-      StandardOutPath = "/tmp/yabai.out";
-      EnvironmentVariables = {
-        PATH = "${pkgs.yabai}/bin:${config.home.profileDirectory}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
-      };
-    };
-  };
-
-  launchd.agents.skhd = {
-    enable = true;
-    config = {
-      ProgramArguments = [ "/usr/local/bin/skhd-signed" ];
-      KeepAlive = true;
-      RunAtLoad = true;
-      StandardErrorPath = "/tmp/skhd.err";
-      StandardOutPath = "/tmp/skhd.out";
-      EnvironmentVariables = {
-        PATH = "${pkgs.skhd}/bin:${config.home.profileDirectory}/bin:/usr/bin:/bin:/usr/sbin:/sbin";
-      };
-    };
-  };
 }
