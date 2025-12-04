@@ -4,23 +4,14 @@ export PATH="$HOME/.nix-profile/bin:$PATH"
 setopt +o nomatch
 setopt interactivecomments
 
-# Safety First
+# --- Safety ---
+## Safe Delete
 alias rm="echo '⛔️ Use \"del\" (trash)'; false"
 alias del="trash-put"
 
-# Smart Loader (安全装置)
-function source_safe() {
-    local file="$1"
-    [ ! -f "$file" ] && return
-    # 構文チェック
-    if ! zsh -n "$file"; then
-        echo "⚠️ Syntax Error in $(basename "$file"). Repairing..."
-        tr -cd '\11\12\40-\176' < "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
-    fi
-    source "$file"
-}
+# --- Core Functions ---
 
-# Unified Interface
+## Smart Editor
 function edit() {
     local file="${1:-.}"
     if [ ! -f "$file" ] || [ $(stat -f %z "$file" 2>/dev/null || echo 0) -gt 100000 ]; then
@@ -30,16 +21,26 @@ function edit() {
     fi
 }
 
-# Reload
+## Reload Shell
 function sz() {
+    echo "🧹 Cleaning environment..."
+    for f in "$HOME/dotfiles/zsh/src/"*.zsh; do
+        [ -f "$f" ] && tr -cd '\11\12\40-\176' < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+    done
     echo "🔄 Reloading Shell..."
     exec zsh
 }
 
-# Omni-Command Entry Point
+# --- The Omni-Command ---
+## Dashboard
 function c() {
+    # 🚨 修正: 引数がない場合は即ガイドを表示して終了
+    if [ $# -eq 0 ]; then
+        guide
+        return
+    fi
+
     local subcmd="$1"; shift
-    if [ -z "$subcmd" ]; then guide; return; fi
     case "$subcmd" in
         "w"|"work") work "$@" ;;
         "n"|"new")  mkproj "$@" ;;
@@ -65,3 +66,4 @@ function c() {
 # Basic Aliases
 alias d="c"
 alias e="edit"
+alias sz="exec zsh"

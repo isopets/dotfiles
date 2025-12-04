@@ -1,3 +1,4 @@
+## System Update
 function nix-up() {
     local dir="$HOME/dotfiles"
     git -C "$dir" add .
@@ -14,6 +15,7 @@ function nix-up() {
     fi
 }
 
+## Add Package
 function nix-add() {
     local pkg="$1"; [ -z "$pkg" ] && pkg=$(gum input --prompt="📦 Package: ")
     [ -z "$pkg" ] && return 1

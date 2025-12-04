@@ -1,8 +1,10 @@
+## Jump to Project
 function p() {
     local n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt="🚀 Jump > " --height=40% --layout=reverse)
     [ -n "$n" ] && cd "$HOME/PARA/1_Projects/$n" && { command -v eza >/dev/null && eza --icons || ls; }
 }
 
+## Morning Briefing
 function briefing() {
     echo ""; gum style --foreground 214 --bold "☀️  MORNING BRIEFING"; echo ""
     gum style --foreground 39 "📉 System:"; uptime | sed 's/^.*up/Up:/' | sed 's/,.*//'
@@ -10,6 +12,7 @@ function briefing() {
     echo ""
 }
 
+## Quick Capture
 function log() {
     local msg="$*"
     [ -z "$msg" ] && echo "Usage: log 'msg'" && return 1
@@ -23,15 +26,30 @@ function log() {
     fi
 }
 
+# 🚨 修正: '##' コメントを解析して綺麗に表示するロジックに戻す
 function guide() {
     echo ""; gum style --foreground 214 --bold --border double "🧭 COCKPIT HUD"; echo ""
-    # srcフォルダ内の全ファイルからエイリアスと関数を抽出
-    grep -hE '^alias|^function' "$HOME/dotfiles/zsh/src/"*.zsh | \
-    grep -vE '^_|rm=' | sed 's/function //' | sed 's/() {.*//' | sed "s/alias //" | sed "s/=['\"].*//" | \
-    xargs | fold -s -w 80
-    echo ""
+    
+    # srcフォルダ内の全ファイルを対象に '##' コメントを検索
+    grep -h -B 1 "^[a-z].*()" "$HOME/dotfiles/zsh/src/"*.zsh "$HOME/dotfiles/zsh/src/"00_core.zsh | \
+    awk '
+        /^##/ { 
+            sub(/^##[ \t]*/, ""); desc = $0; getline; 
+            # 関数名またはエイリアス名を抽出
+            if ($0 ~ /^alias/) { sub(/^alias /, ""); sub(/=.*/, ""); name = $0 }
+            else if ($0 ~ /^function/) { sub(/^function /, ""); sub(/\(\).*/, ""); name = $0 }
+            
+            if (name != "") printf "  %-12s : %s\n", name, desc; 
+        }
+    '
+    
+    echo ""; gum style --foreground 244 -- "=== Shortcuts ==="
+    echo "  del <file>   : Safe Delete"
+    echo "  Ctrl+R       : History (Atuin)"
+    echo "  Tab          : Completion (FZF)"
 }
 
+## Migrate Tools
 function migrate-tools() {
     command -v brew >/dev/null || return 1
     local leaves=$(brew leaves --installed-on-request)
@@ -42,6 +60,7 @@ function migrate-tools() {
     echo "Remove: brew uninstall $selected"
 }
 
+## Security Check
 function audit() {
     echo "🩺 Starting Audit..."
     [ -f "flake.nix" ] && nix flake check
@@ -49,6 +68,7 @@ function audit() {
     echo "✅ Done."
 }
 
+## Archive Project
 function archive() {
     local n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt="📦 Archive > ")
     [ -z "$n" ] && return 1
@@ -60,6 +80,7 @@ function archive() {
     fi
 }
 
+## System Detox
 function cleanup() {
     echo "🧹 System Detox..."
     if gum confirm "Clean Nix?"; then nh clean all --keep 7d; fi

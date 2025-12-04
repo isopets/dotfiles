@@ -70,6 +70,7 @@
     pkgs-unstable.yazi
     pkgs-unstable.navi
     pkgs-unstable.just
+    pkgs-unstable.aider-chat
     # pkgs-unstable.ollama
   ];
 }

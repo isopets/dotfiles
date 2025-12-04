@@ -1,3 +1,4 @@
+## New Project
 function mkproj() {
     local c="$1"; local n="$2"
     if [ -z "$c" ]; then
@@ -7,15 +8,15 @@ function mkproj() {
     [ -z "$n" ] && echo -n "📛 Name: " && read n
     local p="$HOME/Projects/$c/$n"; local para="$HOME/PARA/1_Projects/$n"
     [ -d "$p" ] && echo "❌ Exists" && return 1
-    
     mkdir -p "$p/.vscode" "$para"
-    ln -s "$p" "$para/💻_Code"
+    ln -s "$p" "$para/��_Code"
     git -C "$p" init
     echo "# $n" > "$p/README.md"
     echo "✨ Created $n"
     cd "$p"
 }
 
+## Work Mode
 function work() {
     local n="$1"
     if [ -z "$n" ]; then
@@ -33,6 +34,7 @@ function work() {
     fi
 }
 
+## Finish Work
 function finish-work() {
     if ! git rev-parse --is-inside-work-tree &>/dev/null; then echo "❌ Not a git repo."; return 1; fi
     gcm
@@ -41,12 +43,13 @@ function finish-work() {
     gum style --foreground 82 "🎉 Done."
 }
 
+## Snapshot
 function snapshot() {
     local root=$(git rev-parse --show-toplevel 2>/dev/null); [ -z "$root" ] && return 1
     local dest="$root/.snapshots/snap_$(date "+%Y%m%d_%H%M%S")"
     mkdir -p "$dest"
     rsync -av --exclude '.git' --exclude '.snapshots' --exclude 'node_modules' "$root/" "$dest/" >/dev/null
-    echo "�� Snapshot saved."
+    echo "📸 Snapshot saved."
 }
 alias w="work"
 alias m="mkproj"

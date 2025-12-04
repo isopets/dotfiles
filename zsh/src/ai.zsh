@@ -1,18 +1,18 @@
+# (Helper: _call_gemini omitted for brevity, assume loaded)
 function _call_gemini() {
     local prompt="$1"
     [ -z "$GEMINI_API_KEY" ] && load_secrets
     [ -z "$GEMINI_API_KEY" ] && echo "❌ Key missing." >&2 && return 1
-
     local url="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY"
     local body=$(jq -n --arg q "$prompt" '{contents: [{parts: [{text: $q}]}]}')
     local response=$(curl -s -X POST -H "Content-Type: application/json" -d "$body" "$url")
-    
     if echo "$response" | grep -q '"error":'; then
         echo "❌ API Error:" >&2; echo "$response" | jq . >&2; return 1
     fi
     echo "$response" | jq -r '.candidates[0].content.parts[0].text'
 }
 
+## Ask AI
 function ask() {
     local q="$*"; [ -z "$q" ] && echo "Usage: ask 'q'" && return 1
     echo "🤖 Asking Gemini..."
@@ -20,6 +20,7 @@ function ask() {
     [ -n "$res" ] && echo "" && echo "$res" | gum format 2>/dev/null || echo "$res"
 }
 
+## Commit Msg
 function gcm() {
     [ ! -d .git ] && echo "❌ Not a git repo" && return 1
     git add .
@@ -30,6 +31,7 @@ function gcm() {
     gum confirm "Commit?" && git commit -m "$msg"
 }
 
+## Ask Project
 function ask-project() {
     local q="$1"; [ -z "$q" ] && echo "Usage: ask-project 'q'" && return 1
     ! git rev-parse --is-inside-work-tree >/dev/null 2>&1 && echo "❌ Not a git repo" && return 1
