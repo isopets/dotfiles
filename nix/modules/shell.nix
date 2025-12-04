@@ -22,6 +22,10 @@
   # --- 3. Git & Delta (Modern Config) ---
   programs.git = {
     enable = true;
+    ignores = [
+      ".DS_Store"
+      "*.swp"
+    ];
     # 最新仕様: ユーザー設定は settings ブロックへ
     settings = {
       user = {
@@ -66,6 +70,6 @@
     pkgs-unstable.yazi
     pkgs-unstable.navi
     pkgs-unstable.just
-    pkgs-unstable.ollama
+    # pkgs-unstable.ollama
   ];
 }

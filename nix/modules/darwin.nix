@@ -25,6 +25,15 @@
       KeyRepeat = 2;
       InitialKeyRepeat = 15;
     };
+    # 🚨 追加: .DS_Store 抑制設定
+    # (DSDontWriteNetworkStores: ネットワークドライブで作らない)
+    # (DSDontWriteUSBStores: USBメモリで作らない)
+    CustomUserPreferences = {
+      "com.apple.desktopservices" = {
+        DSDontWriteNetworkStores = true;
+        DSDontWriteUSBStores = true;
+      };
+    };
   };
 
   # --- 2. Homebrew Integration (AeroSpace) ---

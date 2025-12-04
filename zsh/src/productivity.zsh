@@ -25,14 +25,13 @@ function log() {
 
 function guide() {
     echo ""; gum style --foreground 214 --bold --border double "🧭 COCKPIT HUD"; echo ""
-    # Functionsフォルダ内の全ファイルからエイリアスと関数を抽出
-    grep -hE '^alias|^function' "$HOME/dotfiles/zsh/functions/"*.zsh | \
+    # srcフォルダ内の全ファイルからエイリアスと関数を抽出
+    grep -hE '^alias|^function' "$HOME/dotfiles/zsh/src/"*.zsh | \
     grep -vE '^_|rm=' | sed 's/function //' | sed 's/() {.*//' | sed "s/alias //" | sed "s/=['\"].*//" | \
     xargs | fold -s -w 80
     echo ""
 }
 
-# Tools
 function migrate-tools() {
     command -v brew >/dev/null || return 1
     local leaves=$(brew leaves --installed-on-request)
@@ -61,13 +60,11 @@ function archive() {
     fi
 }
 
-function dump-context() {
-    local timestamp=$(date "+%Y%m%d_%H%M%S")
-    local outfile="$HOME/Desktop/cockpit_dump_${timestamp}.txt"
-    echo "📦 Dumping Context..."
-    # (簡易版ダンプ)
-    find "$HOME/dotfiles" -maxdepth 4 -not -path '*/.*' > "$outfile"
-    echo "✅ $outfile"
+function cleanup() {
+    echo "🧹 System Detox..."
+    if gum confirm "Clean Nix?"; then nh clean all --keep 7d; fi
+    if command -v brew >/dev/null; then brew cleanup; fi
+    echo "✨ Cleaned."
 }
 
 alias b="briefing"
@@ -75,5 +72,5 @@ alias l="log"
 alias check="audit"
 alias arc="archive"
 alias mig="migrate-tools"
-alias y="y" 
+alias y="y"
 alias n="navi"

@@ -1,15 +1,10 @@
-# Load Secrets Logic
 function load_secrets() {
     if [ -n "$GEMINI_API_KEY" ]; then return 0; fi
-    
     local stored_session=$(security find-generic-password -w -s "cockpit-bw-session" 2>/dev/null)
     if [ -n "$stored_session" ]; then
         export BW_SESSION="$stored_session"
-        if bw list folders --session "$BW_SESSION" >/dev/null 2>&1; then
-            _fetch_keys; return 0
-        fi
+        if bw list folders --session "$BW_SESSION" >/dev/null 2>&1; then _fetch_keys; return 0; fi
     fi
-
     echo "🔐 Unlocking Vault..."
     local new_session=$(bw unlock --raw)
     if [ $? -eq 0 ] && [ -n "$new_session" ]; then
@@ -23,21 +18,10 @@ function load_secrets() {
 }
 
 function _fetch_keys() {
-    local project="Global"
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        project=$(basename "$(git rev-parse --show-toplevel)")
-    fi
-
-    # 1. Project Specific
-    local key=$(bw get password "$project | Gemini API Key" --session "$BW_SESSION" 2>/dev/null)
-    # 2. Default
-    [ -z "$key" ] && key=$(bw get password "Gemini API Key" --session "$BW_SESSION" 2>/dev/null)
-    
+    local key=$(bw get password "Gemini API Key" --session "$BW_SESSION" 2>/dev/null)
     if [ -n "$key" ]; then
         export GEMINI_API_KEY="$key"
         echo "✅ Secrets loaded."
-    else
-        echo "⚠️  Gemini Key not found."
     fi
 }
 
@@ -48,8 +32,7 @@ function save-key() {
     local service="Unknown"
     [[ "$secret" =~ ^AIza ]] && service="Gemini"
     [[ "$secret" =~ ^sk- ]] && service="OpenAI"
-    [[ "$secret" =~ ^gh ]] && service="GitHub"
-
+    
     local project="Global"
     git rev-parse --is-inside-work-tree >/dev/null 2>&1 && project=$(basename "$(git rev-parse --show-toplevel)")
     

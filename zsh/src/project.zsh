@@ -12,14 +12,6 @@ function mkproj() {
     ln -s "$p" "$para/💻_Code"
     git -C "$p" init
     echo "# $n" > "$p/README.md"
-    
-    cat << 'JUST' > "$p/Justfile"
-set shell := ["zsh", "-c"]
-default:
-    @just --list
-start:
-    @echo "🚀 Starting..."
-JUST
     echo "✨ Created $n"
     cd "$p"
 }
@@ -54,15 +46,7 @@ function snapshot() {
     local dest="$root/.snapshots/snap_$(date "+%Y%m%d_%H%M%S")"
     mkdir -p "$dest"
     rsync -av --exclude '.git' --exclude '.snapshots' --exclude 'node_modules' "$root/" "$dest/" >/dev/null
-    echo "📸 Snapshot saved."
-}
-
-function restore-snapshot() {
-    local root=$(git rev-parse --show-toplevel 2>/dev/null); [ -z "$root" ] && return 1
-    local snap_dir="$root/.snapshots"
-    [ ! -d "$snap_dir" ] && echo "❌ No snapshots." && return 1
-    local target=$(ls "$snap_dir" | fzf --prompt="🕰️ Restore > ")
-    [ -n "$target" ] && gum confirm "Overwrite?" && rsync -av "$snap_dir/$target/" "$root/" >/dev/null && echo "✅ Restored."
+    echo "�� Snapshot saved."
 }
 alias w="work"
 alias m="mkproj"

@@ -7,7 +7,6 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
 
-    # Nix管理の不変エイリアス
     shellAliases = {
       ls = "eza --icons --git";
       cat = "bat";
@@ -19,31 +18,25 @@
       mv = "mv -i";
     };
 
-    # 🚨 修正完了: initExtra -> initContent (最新仕様)
+    # 🚨 修正: src フォルダ内の全ファイルを読み込む
     initContent = ''
-      # 1. FZF-Tab Integration
+      # 1. FZF-Tab
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
-
-      # 2. Auto-Discovery Loader (ファイル名に依存しない読み込み)
-      # "zsh/src" ディレクトリ内の .zsh ファイルを全て読み込む
-      # (cockpit_logic.zsh という名前に縛られるのをやめる)
       
-      # 読み込み対象ディレクトリ
+      # 2. Load Modular Source Files
       LOAD_DIR="$HOME/dotfiles/zsh/src"
-      
       if [ -d "$LOAD_DIR" ]; then
-        # グロブ展開を有効化してループ
-        setopt extended_glob
-        for f in "$LOAD_DIR"/*.zsh(N); do
-          # 読み込み + エラーハンドリング (壊れたファイルがあってもシェルを殺さない)
-          if ! source "$f"; then
-             echo "⚠️  Failed to load: $(basename "$f")"
+        for f in "$LOAD_DIR/"*.zsh; do
+          if [ -r "$f" ]; then
+             source "$f"
           fi
         done
-      else
-        # ディレクトリ自体がない場合の安全策
-        echo "⚠️  Cockpit Logic directory ($LOAD_DIR) not found."
       fi
+
+      # 3. Init Hooks
+      command -v starship >/dev/null && eval "$(starship init zsh)"
+      command -v direnv >/dev/null && eval "$(direnv hook zsh)"
+      [ -f "$(which navi)" ] && eval "$(navi widget zsh)"
     '';
   };
 }

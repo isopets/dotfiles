@@ -24,7 +24,7 @@ function gcm() {
     [ ! -d .git ] && echo "❌ Not a git repo" && return 1
     git add .
     local diff=$(git diff --cached)
-    [ -z "$diff" ] && echo "�� No changes." && return 0
+    [ -z "$diff" ] && echo "🍵 No changes." && return 0
     local msg=$(ask "Generate a conventional commit message for:\n$diff" | head -n 1)
     echo "💬 $msg"
     gum confirm "Commit?" && git commit -m "$msg"
