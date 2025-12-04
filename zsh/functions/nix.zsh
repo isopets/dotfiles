@@ -32,29 +32,75 @@ function nix-add() {
 
 function nix-up() {
     local dir="$HOME/dotfiles"
+    
+    # --- 1. Safe Auto-Commit ---
     git -C "$dir" add .
-    if [ -n "$(git -C "$dir" diff --cached)" ]; then
+    local diff=$(git -C "$dir" diff --cached)
+    
+    if [ -n "$diff" ]; then
         echo "🤖 Auto-committing..."
-        local msg="chore(nix): update configuration"
-        [ -n "$GEMINI_API_KEY" ] && msg=$(ask "Generate commit msg for:\n$(git -C "$dir" diff --cached)" | head -n 1)
+        local msg=""
+        
+        # AIが使えるかチェックしてから呼び出す
+        if [ -n "$GEMINI_API_KEY" ] && command -v ask >/dev/null; then
+            # エラーメッセージが返ってくるのを防ぐため、成功時のみ採用
+            local ai_msg=$(ask "Generate git commit message for:\n$diff" 2>/dev/null | head -n 1)
+            if [[ -n "$ai_msg" && "$ai_msg" != *"Error"* && "$ai_msg" != *"❌"* ]]; then
+                msg="$ai_msg"
+            fi
+        fi
+        
+        # AIが失敗、または使えない場合はデフォルト値
+        if [ -z "$msg" ]; then
+            msg="chore(nix): update configuration"
+            echo "⚠️  Using default commit message."
+        fi
+        
         git -C "$dir" commit -m "$msg"
     fi
-    
-    # Conflict Resolver
+
+    # --- 2. Conflict Resolver ---
+    # 競合ファイルの退避
     for file in "$HOME/.zshrc" "$HOME/.zshenv"; do
         [ -f "$file" ] && [ ! -L "$file" ] && mv "$file" "${file}.backup_$(date +%s)"
     done
 
-    echo "🚀 Updating Cockpit (Darwin)..."
-    if nh darwin switch "$dir"; then
-        echo "☁️ Syncing..."
-        git -C "$dir" push origin main 2>/dev/null
-        echo "✅ Done."
-        if command -v sz &>/dev/null; then sz; else exec zsh; fi
+    # --- 3. Robust Apply (The Fix) ---
+    echo "🚀 Updating Cockpit System..."
+    
+    # nh が使えるかチェックし、使い分ける
+    if command -v nh >/dev/null; then
+        echo "⚡️ Using 'nh' (Fast Mode)..."
+        if nh darwin switch "$dir"; then
+            _nix_up_success
+        else
+            echo "❌ 'nh' failed."
+            return 1
+        fi
     else
-        echo "❌ Failed."
-        return 1
+        echo "🐢 'nh' not found. Using standard 'nix' (Bootstrap Mode)..."
+        # 権限昇格が必要な場合があるため sudo を考慮（必要ならパスワード入力）
+        if sudo nix run nix-darwin -- switch --flake "$dir"; then
+            _nix_up_success
+        else
+            echo "❌ Standard build failed."
+            return 1
+        fi
     fi
+}
+
+# 成功時の共通処理
+function _nix_up_success() {
+    local dir="$HOME/dotfiles"
+    echo "☁️  Syncing to GitHub..."
+    git -C "$dir" push origin main 2>/dev/null
+    echo "✅ Update Complete! Reloading..."
+    
+    # サービス再起動
+    if command -v yabai >/dev/null; then yabai --restart-service 2>/dev/null; fi
+    
+    # シェル再起動
+    exec zsh
 }
 
 function nix-update() {
