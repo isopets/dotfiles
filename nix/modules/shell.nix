@@ -63,9 +63,8 @@
     nvd # 更新差分確認用
     
     pkgs-unstable.sheldon
-    # [追加] Rust製の快適なBitwardenクライアント
-    pkgs-unstable.rbw
-    pkgs-unstable.pinentry_mac# Mac用パスワード入力画面
+  # [復活] 公式CLI (Unstable推奨)
+    pkgs-unstable.bitwarden-cli
     pkgs-unstable.yazi
     pkgs-unstable.navi
     pkgs-unstable.just
