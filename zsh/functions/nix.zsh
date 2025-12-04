@@ -40,15 +40,32 @@ function nix-up() {
         git -C "$dir" commit -m "$msg"
     fi
     
-    echo "�� Updating Cockpit (Darwin)..."
+    # Conflict Resolver
+    for file in "$HOME/.zshrc" "$HOME/.zshenv"; do
+        [ -f "$file" ] && [ ! -L "$file" ] && mv "$file" "${file}.backup_$(date +%s)"
+    done
+
+    echo "🚀 Updating Cockpit (Darwin)..."
     if nh darwin switch "$dir"; then
         echo "☁️ Syncing..."
         git -C "$dir" push origin main 2>/dev/null
         echo "✅ Done."
-        [ -x "$(command -v yabai)" ] && yabai --restart-service 2>/dev/null
-        exec zsh
+        if command -v sz &>/dev/null; then sz; else exec zsh; fi
     else
         echo "❌ Failed."
         return 1
     fi
 }
+
+function nix-update() {
+    local dir="$HOME/dotfiles"
+    echo "🔄 Updating flake.lock..."
+    nix flake update --flake "$dir"
+    echo "🏗️  Previewing..."
+    nh darwin build "$dir" --diff
+    gum confirm "🚀 Apply?" && nix-up || git -C "$dir" checkout flake.lock
+}
+
+# Shortcuts
+function nix-edit() { code ~/dotfiles; }
+function nix-clean() { echo "✨ Cleaning..."; nh clean all --keep 7d; }
