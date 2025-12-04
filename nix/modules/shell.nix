@@ -1,7 +1,7 @@
 { config, pkgs, pkgs-unstable, ... }:
 
 {
-  # --- 1. Magical History (Atuin) ---
+  # --- 1. Magical History ---
   programs.atuin = {
     enable = true;
     enableZshIntegration = true;
@@ -19,11 +19,10 @@
   programs.mise = { enable = true; enableZshIntegration = true; };
   programs.zoxide = { enable = true; enableZshIntegration = true; options = ["--cmd cd"]; };
 
-  # --- 3. Git & Delta (Modernized) ---
+  # --- 3. Git & Delta (Modern Config) ---
   programs.git = {
     enable = true;
-    
-    # 🚨 修正: userName / userEmail / extraConfig は全て 'settings' に統合
+    # 最新仕様: ユーザー設定は settings ブロックへ
     settings = {
       user = {
         name = "isopets";
@@ -34,10 +33,9 @@
     };
   };
 
-  # 🚨 修正: Delta は programs.git の下ではなく、独立した設定として記述
+  # Delta は独立設定
   programs.delta = {
     enable = true;
-    # 警告対応: Git統合を明示的に有効化
     enableGitIntegration = true;
     options = {
       side-by-side = true;
@@ -60,13 +58,14 @@
     zellij
     bottom
     pre-commit
-    nvd # 更新差分確認用
+    nvd
     
+    pkgs-unstable.nh
     pkgs-unstable.sheldon
-  # [復活] 公式CLI (Unstable推奨)
     pkgs-unstable.bitwarden-cli
     pkgs-unstable.yazi
     pkgs-unstable.navi
     pkgs-unstable.just
+    pkgs-unstable.ollama
   ];
 }

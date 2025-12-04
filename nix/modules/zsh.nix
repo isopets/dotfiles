@@ -19,16 +19,30 @@
       mv = "mv -i";
     };
 
-    # 🚨 修正: initExtra -> initContent に変更 (最新仕様)
+    # 🚨 修正完了: initExtra -> initContent (最新仕様)
     initContent = ''
       # 1. FZF-Tab Integration
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
 
-      # 2. Load Cockpit Logic (Direct Link)
-      if [ -f "$HOME/dotfiles/zsh/cockpit_logic.zsh" ]; then
-        source "$HOME/dotfiles/zsh/cockpit_logic.zsh"
+      # 2. Auto-Discovery Loader (ファイル名に依存しない読み込み)
+      # "zsh/src" ディレクトリ内の .zsh ファイルを全て読み込む
+      # (cockpit_logic.zsh という名前に縛られるのをやめる)
+      
+      # 読み込み対象ディレクトリ
+      LOAD_DIR="$HOME/dotfiles/zsh/src"
+      
+      if [ -d "$LOAD_DIR" ]; then
+        # グロブ展開を有効化してループ
+        setopt extended_glob
+        for f in "$LOAD_DIR"/*.zsh(N); do
+          # 読み込み + エラーハンドリング (壊れたファイルがあってもシェルを殺さない)
+          if ! source "$f"; then
+             echo "⚠️  Failed to load: $(basename "$f")"
+          fi
+        done
       else
-        echo "⚠️ Cockpit Logic not found!"
+        # ディレクトリ自体がない場合の安全策
+        echo "⚠️  Cockpit Logic directory ($LOAD_DIR) not found."
       fi
     '';
   };

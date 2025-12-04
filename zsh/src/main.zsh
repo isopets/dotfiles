@@ -61,6 +61,55 @@ function source_safe() {
     fi
 }
 
+# --- 🔐 Secret Management (Official BW + Keychain) ---
+function load_secrets() {
+    # 1. 既にメモリにあるなら何もしない
+    if [ -n "$GEMINI_API_KEY" ]; then return 0; fi
+
+    # 2. キーチェーンからセッションキーを探す
+    #    (securityコマンドはmacOS標準搭載)
+    local stored_session=$(security find-generic-password -w -s "cockpit-bw-session" 2>/dev/null)
+
+    # 3. セッションキーが有効かチェック
+    if [ -n "$stored_session" ]; then
+        export BW_SESSION="$stored_session"
+        if bw list folders --session "$BW_SESSION" >/dev/null 2>&1; then
+            # 有効ならそのまま進む (サイレント認証)
+            _fetch_keys
+            return 0
+        fi
+    fi
+
+    # 4. 無効ならロック解除 (マスターパスワード入力)
+    echo "🔐 Unlocking Vault (Official CLI)..."
+    # パスワード入力は bw が安全に行う
+    local new_session=$(bw unlock --raw)
+    
+    if [ $? -eq 0 ] && [ -n "$new_session" ]; then
+        export BW_SESSION="$new_session"
+        echo "✅ Unlocked."
+        
+        # 5. 新しいセッションをキーチェーンに保存 (上書き)
+        security add-generic-password -U -a "$USER" -s "cockpit-bw-session" -w "$BW_SESSION"
+        _fetch_keys
+    else
+        echo "❌ Unlock failed."
+        return 1
+    fi
+}
+
+function _fetch_keys() {
+    echo "🔑 Fetching Secrets..."
+    # 取得
+    export GEMINI_API_KEY=$(bw get password "Gemini API Key" --session "$BW_SESSION")
+    
+    if [ -n "$GEMINI_API_KEY" ]; then
+        echo "✅ Ready."
+    else
+        echo "⚠️  Gemini API Key not found in Vault."
+    fi
+}
+
 # --- 4. Load External Modules (Transaction) ---
 
 # Secrets
