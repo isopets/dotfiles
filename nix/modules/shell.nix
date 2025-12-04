@@ -65,7 +65,7 @@
     pkgs-unstable.sheldon
     # [追加] Rust製の快適なBitwardenクライアント
     pkgs-unstable.rbw
-    pkgs-unstable.pinentry-mac # Mac用パスワード入力画面
+    pkgs-unstable.pinentry_mac# Mac用パスワード入力画面
     pkgs-unstable.yazi
     pkgs-unstable.navi
     pkgs-unstable.just
