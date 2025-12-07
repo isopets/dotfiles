@@ -2,7 +2,7 @@
 timestamp=$(date "+%Y%m%d_%H%M%S")
 outfile="$HOME/Desktop/cockpit_dump_${timestamp}.txt"
 
-echo "📦 Dumping Cockpit Context to: $outfile"
+echo "📦 Dumping Cockpit Context (Modular) to: $outfile"
 
 {
     echo "=== COCKPIT SNAPSHOT: ${timestamp} ==="
@@ -20,36 +20,39 @@ echo "📦 Dumping Cockpit Context to: $outfile"
 
     echo "--- FILE CONTENTS ---"
     
-    # 診断に必要な重要ファイルのリスト
+    # 1. Nix Core Files
     files=(
         "$HOME/dotfiles/flake.nix"
         "$HOME/dotfiles/home.nix"
         "$HOME/dotfiles/nix/pkgs.nix"
-        "$HOME/dotfiles/nix/modules/shell.nix"
-        "$HOME/dotfiles/nix/modules/zsh.nix"
-        "$HOME/dotfiles/nix/modules/darwin.nix"
-        "$HOME/dotfiles/nix/modules/vscode.nix"
-        "$HOME/dotfiles/nix/modules/neovim.nix"
-        "$HOME/dotfiles/nix/modules/aerospace.nix"
-        "$HOME/dotfiles/nix/modules/window_manager.nix"
-        "$HOME/dotfiles/zsh/cockpit_logic.zsh"
+    )
+    
+    # 2. Nix Modules
+    for f in "$HOME/dotfiles/nix/modules/"*.nix; do
+        [ -f "$f" ] && files+=("$f")
+    done
+
+    # 3. Zsh Logic Modules (src) 🚨 ここを修正
+    # cockpit_logic.zsh ではなく、src フォルダの中身を正とする
+    for f in "$HOME/dotfiles/zsh/src/"*.zsh; do
+        [ -f "$f" ] && files+=("$f")
+    done
+
+    # 4. Other Configs
+    files+=(
         "$HOME/dotfiles/restore.sh"
         "$HOME/.zshrc"
     )
 
-    # Functionsディレクトリの中身も全て追加（もしあれば）
-    for f in "$HOME/dotfiles/zsh/functions/"*.zsh; do
-        [ -f "$f" ] && files+=("$f")
-    done
-
+    # 出力実行
     for f in "${files[@]}"; do
         if [ -f "$f" ]; then
             echo ">>> FILE: $f"
             cat "$f"
             echo -e "\n<<< END OF FILE\n"
         else
-            echo ">>> FILE: $f (NOT FOUND)"
-            echo ""
+            # 存在しないファイルは無視（ノイズになるため出力しない）
+            : 
         fi
     done
 
