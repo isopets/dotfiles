@@ -1,18 +1,34 @@
+# =================================================================
+# ❄️ Cockpit Nix Module (Robust Edition)
+# =================================================================
+
+# --- Helper: Smart Sed (GNU/BSD Compatible) ---
+# 環境に応じて sed の書き方を自動で切り替える関数
+function _sed_i() {
+    if sed --version 2>/dev/null | grep -q GNU; then
+        # GNU sed (Linux/Nix) 用: -i に空文字をつけない
+        sed -i "$@"
+    else
+        # BSD sed (macOS標準) 用: -i '' が必要
+        sed -i '' "$@"
+    fi
+}
+
 ## System Update
 function nix-up() {
-    local dir="$HOME/dotfiles"
+    # 念のためPATHを補完 (mvなどが消える事故を防止)
+    export PATH="$HOME/.nix-profile/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
     
-    # 変更があれば自動コミット
+    local dir="$HOME/dotfiles"
     if [ -n "$(git -C "$dir" status --porcelain)" ]; then
         echo "📦 Auto-committing config changes..."
         git -C "$dir" add .
         git -C "$dir" commit -m "chore(nix): update config via cockpit"
     fi
-
     echo "🚀 Updating System State..."
     if nh darwin switch "$dir"; then
         echo "✅ System Updated."
-        # シェル環境をリロードして反映
+        # シェルを安全にリロード
         source ~/.zshrc
     else
         echo "❌ Update Failed."
@@ -21,42 +37,35 @@ function nix-up() {
 
 ## Add CLI Tool (to pkgs.nix)
 function nix-add() {
-    local pkg="$1";
-    [ -z "$pkg" ] && pkg=$(gum input --placeholder "CLI Package Name (e.g. jq, ripgrep)")
+    local pkg="$1"; [ -z "$pkg" ] && pkg=$(gum input --placeholder "CLI Package Name (e.g. jq)")
     [ -z "$pkg" ] && return 1
     
-    # pkgs.nix に追記
-    sed -i "" "/^  ];/i \\    $pkg" "$HOME/dotfiles/nix/pkgs.nix"
+    local file="$HOME/dotfiles/nix/pkgs.nix"
+    # GNU/BSD両対応のsedを使用
+    _sed_i "/^  ];/i \\    $pkg" "$file"
+    
     echo "📝 Added '$pkg' to pkgs.nix"
     nix-up
 }
 
 ## Add App/Font (to darwin.nix)
-#  Usage: cask-add google-chrome
 function cask-add() {
-    local pkg="$1";
-    [ -z "$pkg" ] && pkg=$(gum input --placeholder "App/Font Name (e.g. google-chrome, font-hackgen)")
+    local pkg="$1"; [ -z "$pkg" ] && pkg=$(gum input --placeholder "App/Font Name (e.g. google-chrome)")
     [ -z "$pkg" ] && return 1
-
     local file="$HOME/dotfiles/nix/modules/darwin.nix"
     
-    # 重複チェック
-    if grep -q "\"$pkg\"" "$file"; then
-        echo "⚠️  '$pkg' is already in configuration."
-        return 1
-    fi
+    if grep -q "\"$pkg\"" "$file"; then echo "⚠️ '$pkg' exists."; return 1; fi
 
     echo "📝 Adding '$pkg' to darwin.nix..."
     
-    # sedを使って casks = [ ... ]; のリストの中に追記する
-    # (現在の単一行フォーマットに対応: 末尾の ]; を "pkg" ]; に置換)
-    sed -i '' "s/ \];/ \"$pkg\" \];/" "$file"
+    # 修正版ロジック:
+    # 閉じ括弧 ]; を見つけて、その前に "pkg" を挿入する
+    _sed_i "s/\];/ \"$pkg\" \];/" "$file"
     
     nix-up
 }
 
 # Aliases
 alias up="nix-up"
-alias add="nix-add"     # CLIツール追加
-alias app="cask-add"    # アプリ追加 (エイリアス)
-
+alias add="nix-add"
+alias app="cask-add"

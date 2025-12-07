@@ -44,13 +44,13 @@
       cleanup = "zap"; # 記述にないアプリ(Yabai等)を削除
       upgrade = true;
     };
-    taps = [ "nikitabobko/tap" ];
-    casks = [ "aerospace" ];
+    taps = [ "nikitabobko/tap"  "Alacritty" ];
+    casks = [ "aerospace"  "Alacritty" ];
   };
 
   # --- 3. Nix Core ---
   nix.enable = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [ "nix-command" "flakes"  "Alacritty" ];
   
   # Auto Optimise (Darwin)
   nix.settings.auto-optimise-store = false; # Unstableでのクラッシュ防止のためfalse
