@@ -1,5 +1,5 @@
 # =================================================================
-# ❄️ Cockpit Nix Module (Smart Security Edition)
+# ❄️ Cockpit Nix Module (Stable & Alias-Proof)
 # =================================================================
 
 # --- Helper: Smart Sed ---
@@ -9,7 +9,9 @@ function _sed_i() {
 
 ## System Update
 function nix-up() {
-    export PATH="$HOME/.nix-profile/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    # 1. PATHを強制的に安定化 (標準コマンドを最優先)
+    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.nix-profile/bin:$PATH"
+    
     local dir="$HOME/dotfiles"
     
     if [ -n "$(git -C "$dir" status --porcelain)" ]; then
@@ -21,7 +23,7 @@ function nix-up() {
     echo "🚀 Updating System State..."
     if nh darwin switch "$dir"; then
         echo "✅ System Updated."
-        export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+        # リロード
         source ~/.zshrc
         return 0
     else
@@ -39,12 +41,11 @@ function nix-add() {
     nix-up
 }
 
-## Add App/Font (Trust-Verify Protocol)
+## Add App/Font (Alias-Proof Edition)
 function cask-add() {
     local force_trust=false
     local pkg=""
 
-    # 引数解析 (-y オプションの検知)
     for arg in "$@"; do
         if [[ "$arg" == "-y" || "$arg" == "--yes" ]]; then
             force_trust=true
@@ -53,7 +54,7 @@ function cask-add() {
         fi
     done
 
-    [ -z "$pkg" ] && pkg=$(gum input --placeholder "App Name (e.g. google-chrome)")
+    [ -z "$pkg" ] && pkg=$(gum input --placeholder "App Name")
     [ -z "$pkg" ] && return 1
 
     local file="$HOME/dotfiles/nix/modules/darwin.nix"
@@ -68,7 +69,10 @@ function cask-add() {
     # === 🛡️ Smart Gatekeeper Logic ===
     if [ $update_status -eq 0 ]; then
         echo "🔍 Scanning for installed app..."
-        local app_path=$(find /Applications -maxdepth 1 -iname "*${pkg}*.app" | head -1)
+        
+        # 修正ポイント: 
+        # エイリアス(find=fd)を回避するため、絶対パス '/usr/bin/find' を使用
+        local app_path=$(/usr/bin/find /Applications -maxdepth 1 -iname "*${pkg}*.app" | head -1)
         
         if [ -n "$app_path" ]; then
             local app_name=$(basename "$app_path")
@@ -82,15 +86,19 @@ function cask-add() {
                 if gum confirm "🛡️ Security Check: Trust & Unlock '$app_name'?"; then
                     echo "🔓 Unlocking..."
                     sudo xattr -d com.apple.quarantine "$app_path" 2>/dev/null
-                    echo "✅ Allowed. You can open it safely."
+                    echo "✅ Allowed."
                 else
                     echo "🔒 Kept in Quarantine."
                 fi
             fi
+        else
+            # フォントなどの場合はアプリが見つからないので、エラーではなくスキップ扱い
+            echo "ℹ️  No .app file found (might be a font or CLI tool). Skipping unlock."
         fi
     fi
 }
 
+# Aliases
 alias up="nix-up"
 alias add="nix-add"
 alias app="cask-add"

@@ -1,97 +1,122 @@
-## Jump to Project
+# =================================================================
+# 🚀 Cockpit Productivity Module
+# =================================================================
+
+## 📝 Daily Report (AI Powered)
+function daily() {
+    echo "📝 Generating Daily Report..."
+    
+    # 今日の日付
+    local today=$(date "+%Y-%m-%d")
+    local report_file="$HOME/PARA/0_Inbox/Daily_${today}.md"
+    
+    # 1. 情報を収集 (Git Log)
+    local git_log=""
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git_log=$(git log --since="6am" --pretty=format:"- %s" 2>/dev/null)
+    fi
+    
+    # 情報がなければ終了
+    if [ -z "$git_log" ]; then
+        echo "🤔 No commits found today. Skipping AI summary."
+        return
+    fi
+    
+    echo "🤖 Asking AI to summarize..."
+    
+    # 2. AIに投げるプロンプト
+    local prompt="以下のGitコミットログから、今日の業務日報(Markdown)を作成してください。
+    - 簡潔な箇条書きで
+    - 'やったこと' と '技術的な学び' に分けて
+    
+    --- Log ---
+    $git_log"
+    
+    # ask関数 (ai.zsh) を利用
+    local summary=$(ask "$prompt")
+    
+    # 3. 保存
+    echo "# 📅 Daily Report: $today" > "$report_file"
+    echo "" >> "$report_file"
+    echo "$summary" >> "$report_file"
+    
+    echo "✅ Report saved to: $report_file"
+    code "$report_file"
+}
+
+## 📂 Jump to Project
 function p() {
-    local n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt=" Jump > " --height=40% --layout=reverse)
+    local n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt="📂 Jump > " --height=40% --layout=reverse)
     [ -n "$n" ] && cd "$HOME/PARA/1_Projects/$n" && { command -v eza >/dev/null && eza --icons || ls; }
 }
 
-## Morning Briefing
-function briefing() {
-    echo ""; gum style --foreground 214 --bold "  MORNING BRIEFING"; echo ""
-    gum style --foreground 39 " System:"; uptime | sed 's/^.*up/Up:/' | sed 's/,.*//'
-    gum style --foreground 208 " Git:"; [ -d "$HOME/dotfiles" ] && git -C "$HOME/dotfiles" status -s -b
-    echo ""
-}
-
-## Quick Capture
+## 📝 Quick Capture (Log)
 function log() {
     local msg="$*"
     [ -z "$msg" ] && echo "Usage: log 'msg'" && return 1
     local ts=$(date '+%H:%M')
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        echo "- [$ts] $msg" >> "$(git rev-parse --show-toplevel)/docs/DEV_LOG.md"
-        echo " Logged to project."
+        # Gitプロジェクト内ならプロジェクトのログへ
+        local root=$(git rev-parse --show-toplevel)
+        mkdir -p "$root/docs"
+        echo "- [$ts] $msg" >> "$root/docs/DEV_LOG.md"
+        echo "📝 Logged to project (docs/DEV_LOG.md)."
     else
+        # それ以外ならInboxへ
         echo "- [$ts] $msg" >> "$HOME/PARA/0_Inbox/quick_notes.md"
-        echo " Logged to Inbox."
+        echo "📝 Logged to Inbox."
     fi
 }
 
-#  : '##' 
-function guide() {
-    echo ""; gum style --foreground 214 --bold --border double " COCKPIT HUD"; echo ""
-    
-    # src '##' 
-    grep -h -B 1 "^[a-z].*()" "$HOME/dotfiles/zsh/src/"*.zsh "$HOME/dotfiles/zsh/src/"00_core.zsh | \
-    awk '
-        /^##/ { 
-            sub(/^##[ \t]*/, ""); desc = $0; getline; 
-            # 
-            if ($0 ~ /^alias/) { sub(/^alias /, ""); sub(/=.*/, ""); name = $0 }
-            else if ($0 ~ /^function/) { sub(/^function /, ""); sub(/\(\).*/, ""); name = $0 }
-            
-            if (name != "") printf "  %-12s : %s\n", name, desc; 
-        }
-    '
-    
-    echo ""; gum style --foreground 244 -- "=== Shortcuts ==="
-    echo "  del <file>   : Safe Delete"
-    echo "  Ctrl+R       : History (Atuin)"
-    echo "  Tab          : Completion (FZF)"
-}
-
-## Migrate Tools
-function migrate-tools() {
-    command -v brew >/dev/null || return 1
-    local leaves=$(brew leaves --installed-on-request)
-    [ -z "$leaves" ] && echo " Empty." && return 0
-    local selected=$(echo "$leaves" | gum choose --no-limit --height 15)
-    [ -z "$selected" ] && return 0
-    echo "$selected" | while read pkg; do [ -n "$pkg" ] && nix-add "$pkg" "auto"; done
-    echo "Remove: brew uninstall $selected"
-}
-
-## Security Check
+## 🏥 Health Check (Project Audit)
 function audit() {
-    echo " Starting Audit..."
-    [ -f "flake.nix" ] && nix flake check
-    command -v trivy >/dev/null && trivy fs . --severity HIGH,CRITICAL --scanners vuln,config
-    echo " Done."
-}
-
-## Archive Project
-function archive() {
-    local n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt=" Archive > ")
-    [ -z "$n" ] && return 1
-    local src="$HOME/PARA/1_Projects/$n"; local dest="$HOME/PARA/4_Archives/$n"
-    if gum confirm "Archive $n?"; then
-        mkdir -p "$HOME/PARA/4_Archives"
-        mv "$src" "$dest"
-        gum style --foreground 214 " Archived."
+    echo "🏥 Running Cockpit Health Check..."
+    
+    # 1. Git Status
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        echo ""
+        echo "📊 --- Git Status ---"
+        git status -s
     fi
+    
+    # 2. Config Check
+    echo ""
+    echo "⚙️  --- Configuration ---"
+    if [ -f ".vscode/settings.json" ]; then
+        echo "✅ VS Code Settings found."
+    else
+        echo "⚠️  No .vscode/settings.json found. (Run 'sync' to fix)"
+    fi
+    
+    # 3. Extension Check
+    if [ -f ".vscode/extensions.json" ]; then
+        echo ""
+        echo "🧩 --- Extensions Check ---"
+        
+        # 推奨リストを取得 (grepでIDを抽出)
+        local rec_ids=$(grep -o '"[a-zA-Z0-9\.-]*\.[a-zA-Z0-9\.-]*"' .vscode/extensions.json | tr -d '"')
+        
+        # インストール済みリストを取得
+        local installed_ids=$(code --list-extensions 2>/dev/null)
+        
+        # 照合ループ
+        echo "$rec_ids" | while read -r id; do
+            if [ -n "$id" ]; then
+                if echo "$installed_ids" | grep -qi "$id"; then
+                    echo "✅ Installed: $id"
+                else
+                    echo "❌ MISSING:   $id  (Install this!)"
+                fi
+            fi
+        done
+    fi
+    
+    echo ""
+    echo "✅ Audit complete."
 }
 
-## System Detox
-function cleanup() {
-    echo " System Detox..."
-    if gum confirm "Clean Nix?"; then nh clean all --keep 7d; fi
-    if command -v brew >/dev/null; then brew cleanup; fi
-    echo " Cleaned."
-}
-
-alias b="briefing"
+# Aliases
 alias l="log"
+alias b="briefing"
 alias check="audit"
-alias arc="archive"
-alias mig="migrate-tools"
-alias y="y"
-alias n="navi"
+alias done="daily" # finish work alias
