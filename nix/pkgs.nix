@@ -10,5 +10,7 @@
     uv
     nerd-fonts.hack
     yq
+    lnav
+    lnav
   ];
 }
