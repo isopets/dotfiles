@@ -1,5 +1,5 @@
 # =================================================================
-# ❄️ Cockpit Nix Module (Wrapper Script Edition)
+# ❄️ Cockpit Nix Module (Final Fix)
 # =================================================================
 
 NIX_LOG="/tmp/cockpit_nix.log"
@@ -12,9 +12,16 @@ function _sed_i() {
 
 ## 🚀 System Update
 function nix-up() {
+    # ロックファイルが残っていたら警告（強制削除は手動または再起動で）
     if [ -f "$NIX_LOCK" ]; then
-        echo "⚠️  Update is already running!"
-        return 1
+        # プロセスが生きてるか確認、死んでたらロック削除して続行
+        if ! pgrep -f "cockpit-update.sh" > /dev/null; then
+             echo "🗑️  Removing stale lock file..."
+             rm -f "$NIX_LOCK"
+        else
+             echo "⚠️  Update is already running!"
+             return 1
+        fi
     fi
 
     echo "🚀 Update started in background..."
@@ -24,7 +31,7 @@ function nix-up() {
         touch "$NIX_LOCK"
         echo "=== 🚀 Update Started at $(date) ===" > "$NIX_LOG"
         
-        # Git Auto-commit (User権限で実行)
+        # Git Auto-commit (User権限)
         local dir="$HOME/dotfiles"
         if [ -n "$(git -C "$dir" status --porcelain)" ]; then
              echo "📦 Auto-committing config..." >> "$NIX_LOG"
@@ -32,8 +39,7 @@ function nix-up() {
              git -C "$dir" commit -m "chore(nix): update config" >> "$NIX_LOG" 2>&1
         fi
 
-        # === 核心部分 ===
-        # 作成したスクリプトを sudo で呼ぶ (パスワードは聞かれない)
+        # Script Execution (Root権限 - darwin-rebuild)
         if sudo "$UPDATE_SCRIPT" >> "$NIX_LOG" 2>&1; then
             echo "✅ Success at $(date)" >> "$NIX_LOG"
             osascript -e 'display notification "System Updated 🚀" with title "Cockpit Ready"'
