@@ -1,6 +1,10 @@
 # ==========================================
-# 🌌 Starship Preset (External File)
+# 🌌 Starship Cockpit Edition (AI-Optimized)
 # ==========================================
+# [AI_NOTE]
+# このファイルは、開発者の「認知負荷」を下げるためのHUD設定です。
+# 単なる装飾ではなく、セキュリティ状態や環境の危険度を
+# 直感的に伝える役割を担っています。
 
 add_newline = true
 command_timeout = 1000
@@ -10,11 +14,18 @@ $os\
 $directory\
 $git_branch\
 $git_status\
+$aws\
+$kubernetes\
+$package\
+$nodejs\
+$python\
 $custom\
 $cmd_duration\
 $line_break\
 $character"""
 
+# --- 🍎 OS Context ---
+# [AI_NOTE] 現在どのOSで作業中かを明示。SSH接続時などの誤認を防ぐ。
 [os]
 disabled = false
 style = "bold blue"
@@ -24,12 +35,16 @@ format = "[$symbol]($style) "
 Macos = "🍎"
 Linux = "🐧"
 
+# --- 📂 Directory ---
+# [AI_NOTE] パスが長くなりすぎないよう3階層で切り詰め、可読性を維持する。
 [directory]
 style = "bold cyan"
 truncation_length = 3
 truncation_symbol = "…/"
 read_only = " 🔒"
 
+# --- 🌱 Git Status ---
+# [AI_NOTE] ブランチの状態を記号化し、git statusを打つ手間を省く。
 [git_branch]
 symbol = "🌱 "
 style = "bold green"
@@ -40,33 +55,58 @@ conflicted = "🏳"
 ahead = "🏎💨"
 behind = "🐢"
 diverged = "🔀"
-up_to_date = ""
-untracked = "🤷"
-stashed = "📦"
 modified = "📝"
 
-[cmd_duration]
-min_time = 2000
-format = " ⏱ [$duration]($style)"
-style = "yellow"
+# --- ☁️ Cloud Safety ---
+# [AI_NOTE] 本番環境(Production)での誤操作を防ぐため、クラウド接続時は赤色で警告する。
+[aws]
+symbol = "☁️  "
+style = "bold red"
+format = 'on [$symbol$profile(\($region\))]($style) '
 
-# --- カスタム通知 (Trial Mode) ---
+[kubernetes]
+symbol = "☸️  "
+style = "bold red"
+format = 'at [$symbol$context]($style) '
+
+# --- 📦 Language Context ---
+# [AI_NOTE] 常に表示するとノイズになるため、関連ファイルがある時だけバージョンを表示する。
+
+[package]
+symbol = "📦 "
+disabled = false
+
+[nodejs]
+symbol = "🐢 "
+style = "bold green"
+detect_files = ["package.json", ".nvmrc"]
+
+[python]
+symbol = "🐍 "
+style = "bold yellow"
+detect_files = ["requirements.txt", "Pipfile", "pyproject.toml"]
+
+# --- 🛡️ Cockpit Security Modules ---
+
+# 1. Bitwarden Status
+# [AI_NOTE] パスワードマネージャーのロック状態を監視。
+# 🔒(Locked)ならAPIキー取得に失敗するため、事前にログインを促す合図となる。
+[custom.bitwarden]
+command = "if [ -n \"$BW_SESSION\" ]; then echo \"🔓\"; else echo \"🔒\"; fi"
+when = "true"
+style = "bold red"
+format = "[$output]($style) "
+shell = ["bash", "--noprofile", "--norc"]
+
+# 2. VS Code Trial Mode
+# [AI_NOTE] 設定ファイルが書き込み可能な「危険状態」であることを警告する。
 [custom.vscode_trial]
 command = "echo ' 🧪 TRIAL MODE'"
 when = "test -w \"$HOME/dotfiles/vscode/profiles/[Base] Common/settings.json\""
 style = "bg:#ff4b4b fg:#ffffff bold"
 format = "[$symbol $output]($style)"
 
+# --- ❯ Prompt Character ---
 [character]
 success_symbol = "[❯](bold green)"
 error_symbol = "[❯](bold red)"
-vicmd_symbol = "[❮](bold yellow)"
-
-# --- [Custom Module: VS Code Profile] ---
-[custom.vscode_profile]
-# workコマンドで設定された環境変数 COCKPIT_VSCODE_PROFILE を表示
-command = 'echo "$COCKPIT_VSCODE_PROFILE"'
-when = "test -n \"$COCKPIT_VSCODE_PROFILE\""
-format = "on [${output}]($style) "
-style = "bold yellow"
-disabled = false
