@@ -1,156 +1,117 @@
 # =================================================================
-# 🚀 Cockpit Productivity Plus Module (Autonomous Edition)
+# 🚀 Cockpit Productivity Plus (v3.2)
 # [AI_NOTE]
-# 1. undo: Time Machine
-# 2. run:  Phoenix Protocol (Auto-Healing) 搭載ランナー
-# 3. mkjust: AI Architect
-# 4. recon: Active Reconnaissance (ディレクトリ移動時に自動発動)
+# 1. undo: Rollback system
+# 2. run:  Phoenix Runner (Just + Auto)
+# 3. app:  Smart App Installer (Search & Adopt)
+# 4. purge: Ghost App Buster
 # =================================================================
 
-# --- 1. Time Machine (Nix Rollback) ---
+# --- 1. Time Machine ---
 function undo() {
-    echo "🕰️  Time Machine: Select a generation to restore..."
-    local gen_path
-    gen_path=$(home-manager generations | gum choose --height=10 --header="Select Generation to Restore" | awk '{print $7}')
-    if [ -z "$gen_path" ]; then echo "❌ Cancelled."; return 1; fi
+    local gen_path=$(home-manager generations | gum choose --height=10 --header="Select Generation" | awk '{print $7}')
+    [ -z "$gen_path" ] && return
     echo "🔄 Rolling back to: $gen_path"
-    "$gen_path/activate" && echo "✅ Restored. Please restart shell." || echo "❌ Failed."
+    "$gen_path/activate" && echo "✅ Restored." || echo "❌ Failed."
 }
 
-# --- 2. Universal Runner (with Phoenix Protocol) ---
-function run() {
-    local cmd=""
-    local cmd_str=""
+# --- 2. Smart App Installer (Search & Adopt) ---
+# [AI_NOTE]
+# 1. Brewからアプリを曖昧検索して選択 (Gum)
+# 2. 既存のconfigにあるかチェック
+# 3. /Applications に手動インストールされた同名アプリがないかチェック
+# 4. あればゴミ箱に移動(Adopt)して、Nixに追加・インストール
+function app() {
+    local query="$1"
+    if [ -z "$query" ]; then
+        query=$(gum input --placeholder "App Name (fuzzy search)")
+    fi
+    [ -z "$query" ] && return 1
 
-    # --- A. Command Selection ---
-    if [ -f "Justfile" ] || [ -f "justfile" ]; then
-        if [ -n "$1" ]; then
-            cmd="just $@"
-            cmd_str="just $*"
-        else
-            local selected
-            selected=$(just --summary | tr ' ' '\n' | gum choose --height=10 --header="🚀 Just Runner")
-            [ -z "$selected" ] && echo "❌ Cancelled." && return
-            cmd="just $selected"
-            cmd_str="just $selected"
-        fi
-    elif [ -f "package.json" ] && grep -q '"dev":' package.json; then
-        cmd="npm run dev"; cmd_str="npm run dev"
-    elif [ -f "main.py" ]; then
-        cmd="python main.py"; cmd_str="python main.py"
-    elif [ -f "Cargo.toml" ]; then
-        cmd="cargo run"; cmd_str="cargo run"
-    elif [ -f "Makefile" ]; then
-        cmd="make"; cmd_str="make"
-    else
-        echo "🤔 No runnable configuration."
-        echo "💡 Tip: Run 'mkjust' to generate one."
+    echo "🔍 Searching Homebrew Casks..."
+    # 検索結果から選択させる
+    local selected
+    selected=$(brew search --cask "$query" | grep -v "==>" | gum filter --placeholder "Pick the app to install")
+
+    [ -z "$selected" ] && echo "❌ Cancelled." && return 1
+
+    # 重複チェック (Config)
+    local config_file="$HOME/dotfiles/nix/modules/darwin.nix"
+    if grep -q "\"$selected\"" "$config_file"; then
+        echo "⚠️  '$selected' is already in your config."
         return
     fi
 
-    # --- B. Execution & Phoenix Protocol ---
-    echo "🚀 Executing: $cmd_str"
+    # 衝突チェック (Manual Install)
+    # Cask名からアプリ名を完全推測するのは難しいが、brew infoでArtifactの場所を確認できる
+    echo "🕵️  Checking for conflicts..."
+    local app_info=$(brew info --cask "$selected")
+    # Artifact行から .app の名前を抽出 (簡易的)
+    local app_name=$(echo "$app_info" | grep -o "[A-Za-z0-9 ]*\.app" | head -n 1)
     
-    # 実行し、エラーならログを一時ファイルに保存
-    local log_tmp=$(mktemp)
-    eval "$cmd" 2>&1 | tee "$log_tmp"
-    local exit_code=${PIPESTATUS[0]} # パイプの前の終了コードを取得
-
-    # --- C. Error Recovery ---
-    if [ $exit_code -ne 0 ]; then
-        echo ""
-        echo "💥 Mission Failed (Exit Code: $exit_code)"
+    if [ -n "$app_name" ] && [ -e "/Applications/$app_name" ]; then
+        echo "⚠️  Conflict detected: '/Applications/$app_name' already exists."
         
-        # Gumが使える場合のみ、インタラクティブに復旧を提案
-        if command -v gum >/dev/null; then
-            if gum confirm "🔥 Phoenix Protocol: Ask AI to analyze this error?"; then
-                echo "🚑 Analyzing error log..."
-                local error_tail=$(tail -n 20 "$log_tmp")
-                local prompt="以下のコマンド実行時にエラーが発生しました。原因と修正方法を簡潔に教えてください。\n\nコマンド: \`$cmd_str\`\n\n--- エラーログ ---\n$error_tail"
-                
-                # ai.zsh の ask 関数を呼び出す
-                ask "$prompt"
-            fi
+        # Brew管理下かどうか確認
+        if brew list --cask "$selected" &>/dev/null; then
+             echo "   (It is managed by Homebrew, so it will be adopted automatically.)"
+        else
+             echo "   (It seems to be installed MANUALLY.)"
+             if gum confirm "🗑️  Move existing '$app_name' to Trash to allow Nix installation?"; then
+                 echo "🚀 Moving to Trash..."
+                 mv "/Applications/$app_name" "$HOME/.Trash/"
+             else
+                 echo "❌ Cancelled to prevent conflict."
+                 return 1
+             fi
         fi
     fi
-    rm "$log_tmp"
-}
 
-# --- 3. AI Justfile Generator ---
-function mkjust() {
-    if [ -f "Justfile" ]; then echo "⚠️ Justfile exists."; return 1; fi
-    echo "🤖 Analyzing project structure..."
-    local files=""; if command -v eza >/dev/null; then files=$(eza --tree --level=2 -I ".git|node_modules|.DS_Store"); else files=$(find . -maxdepth 2 -not -path '*/.*'); fi
-    local hints=""; [ -f "package.json" ] && hints+="\n--- package.json ---\n$(cat package.json | head -n 20)"
-
-    echo "⚡ Asking Gemini..."
-    local prompt="DevOpsの専門家として、このプロジェクトに最適な 'Justfile' を作成してください。\n要件: dev, build, test 等のタスクを含める。推測で書く。出力はファイルの中身のみ。\n\nFiles:\n$files\n\nHints:\n$hints"
-    
-    local content=$(ask "$prompt")
-    if [ -n "$content" ]; then
-        echo "$content" > Justfile
-        echo "✨ Justfile generated! Type 'run' to start."
+    # 追加処理
+    echo "📝 Adding '$selected' to Nix config..."
+    if sed --version 2>/dev/null | grep -q GNU; then
+        sed -i "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
     else
-        echo "❌ AI failed."
+        sed -i '' "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
     fi
+
+    # インストール実行
+    nix-up
 }
 
-# --- 4. Active Reconnaissance (Hook) ---
-# [AI_NOTE] ディレクトリ移動(chpwd)のたびに実行される偵察関数。
-# Justfileがある場合、利用可能なレシピを薄く表示してユーザーに知らせる。
-function _cockpit_recon() {
+# --- 3. Universal Runner ---
+function run() {
+    local cmd=""
     if [ -f "Justfile" ] || [ -f "justfile" ]; then
-        # レシピ一覧を横並びで取得
-        local recipes=$(just --summary)
-        # グレー色で控えめに表示 (Gum style or ANSI escape)
-        echo -e "\033[1;30m💡 Available: $recipes\033[0m"
-    fi
+        [ -n "$1" ] && cmd="just $@" || cmd="just $(just --summary | tr ' ' '\n' | gum choose)"
+    elif [ -f "package.json" ] && grep -q '"dev":' package.json; then cmd="npm run dev"
+    elif [ -f "main.py" ]; then cmd="python main.py"
+    elif [ -f "Cargo.toml" ]; then cmd="cargo run"
+    elif [ -f "Makefile" ]; then cmd="make"
+    else echo "🤔 No runnable config. Run 'mkjust'."; return; fi
+    
+    [ -z "$cmd" ] && return
+    echo "🚀 Executing: $cmd"
+    eval "$cmd" || {
+        echo "💥 Failed."
+        gum confirm "🔥 Ask AI to fix?" && ask "Fix this command error:\nCmd: $cmd"
+    }
 }
 
-# Zshのフックに登録 (重複登録防止)
-autoload -Uz add-zsh-hook
-add-zsh-hook chpwd _cockpit_recon
-
-# --- 5. AI Explainer ---
-function explain() {
-    local cmd="$*"
-    [ -z "$cmd" ] && echo "Usage: explain 'cmd'" && return 1
-    ask "以下のコマンドの目的とリスクを日本語で解説:\n\`$cmd\`"
+# --- 4. MKJust & Explain ---
+function mkjust() {
+    [ -f "Justfile" ] && echo "⚠️ Exists." && return
+    ask "Create Justfile for this project structure:\n$(ls -F)" > Justfile && echo "✨ Created."
+}
+function explain() { ask "Explain command:\n$*"; }
+function purge() {
+    local g=$(brew bundle cleanup --file=~/dotfiles/nix/modules/darwin.nix --global 2>/dev/null)
+    [ -z "$g" ] && echo "✨ Clean." && return
+    echo "⚠️  Ghosts:\n$g"
+    gum confirm "🔥 Burn?" && brew bundle cleanup --force --file=~/dotfiles/nix/modules/darwin.nix --global
 }
 
 # Aliases
 alias start="run"
 alias rollback="undo"
 alias wtf="explain"
-
-# --- 5. Ghost App Buster ---
-# [AI_NOTE] Nix/Homebrewの管理外にある「幽霊アプリ」を検知し、
-# インタラクティブに削除する掃除屋。
-function purge() {
-    echo "👻 Hunting for Ghost Apps (Unmanaged Applications)..."
-    
-    # Check 1: Brewfileとの乖離を確認
-    # (darwin.nixの設定に基づいて、消すべきものをリストアップ)
-    local ghosts
-    ghosts=$(brew bundle cleanup --file=~/dotfiles/nix/modules/darwin.nix --global 2>/dev/null)
-
-    if [ -z "$ghosts" ]; then
-        echo "✨ System is clean! No ghost apps found."
-        return
-    fi
-
-    echo "⚠️  Found unmanaged apps:"
-    echo "$ghosts"
-    echo ""
-
-    if gum confirm "🔥 Burn them all? (Uninstall)"; then
-        echo "🚀 Purging..."
-        # 実際に削除を実行 (Force clean)
-        # Note: nix-darwinのzap設定に依存するが、ここで明示的に呼ぶことで即時性を高める
-        brew bundle cleanup --force --file=~/dotfiles/nix/modules/darwin.nix --global
-        
-        echo "✅ Purge complete. System is now consistent."
-    else
-        echo "🛡️  Operation cancelled."
-    fi
-}

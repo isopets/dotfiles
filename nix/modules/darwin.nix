@@ -45,7 +45,7 @@
       upgrade = true;
     };
     taps = [ "nikitabobko/tap"  ];
-    casks = [ "aerospace"  "Alacritty"  "font-hackgen-nerd"  "xbar" ];
+    casks = [ "aerospace"  "Alacritty"  "font-hackgen-nerd"  "xbar"  "karabiner-elements" ];
   };
 
   # --- 3. Nix Core ---
