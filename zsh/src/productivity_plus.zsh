@@ -1,84 +1,60 @@
 # =================================================================
-# 🚀 Cockpit Productivity Plus (v3.3 Smart Adoption)
+# 🚀 Cockpit Productivity Plus (v4.0 Async Edition)
 # [AI_NOTE]
-# 1. app: 手動アプリを検知し、安全にNix管理下へ移行させる (Adoption)
-# 2. run: 万能ランナー
-# 3. undo: タイムマシン
+# "Fire and Forget" 思想の実装。
+# ユーザーを待たせない。認証さえ通れば、あとは裏のタブ(Zellij)で執事がやる。
 # =================================================================
 
-# --- 1. Smart App Installer (Adoption Edition) ---
+# --- 1. Async App Installer ---
 function app() {
     local query="$1"
-    if [ -z "$query" ]; then
-        query=$(gum input --placeholder "App Name (fuzzy search)")
-    fi
-    [ -z "$query" ] && return 1
-
-    echo "🔍 Searching Homebrew Casks..."
-    # 検索結果から選択 (インストール済みかどうかも表示したいが、まずはシンプルに検索)
+    
+    # 1. 検索・選択フェーズ (ここは対話が必要なので待つ)
+    if [ -z "$query" ]; then query=$(gum input --placeholder "App Name"); fi
+    [ -z "$query" ] && return
+    
     local selected
-    selected=$(brew search --cask "$query" | grep -v "==>" | gum filter --placeholder "Pick the app to install")
-    [ -z "$selected" ] && echo "❌ Cancelled." && return 1
+    selected=$(brew search --cask "$query" | grep -v "==>" | gum filter --placeholder "Select App")
+    [ -z "$selected" ] && return
 
-    # 重複チェック (Config内)
+    # 2. 設定ファイルへの追記 (一瞬で終わる)
     local config_file="$HOME/dotfiles/nix/modules/darwin.nix"
     if grep -q "\"$selected\"" "$config_file"; then
-        echo "⚠️  '$selected' is already in your nix config."
-        echo "   (If it's broken, try running 'up' again to repair links.)"
-        return
+        echo "⚠️  Already in config. Re-installing..."
+    else
+        if sed --version 2>/dev/null | grep -q GNU; then
+            sed -i "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
+        else
+            sed -i '' "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
+        fi
+        echo "📝 Added '$selected' to config."
     fi
 
-    # 🕵️ 衝突検知 & 養子縁組 (Adoption) ロジック
-    echo "🕵️  Checking installation status..."
+    # 3. インストール実行 (非同期化)
+    echo "🚀 Dispatching background installer..."
+
+    # 新しいタブを作り、そこで認証 -> 実行 -> 自動クローズを行う
+    # (ユーザーの今の画面はブロックされない！)
+    local job_name="📦 Installing $selected"
     
-    # brew info から正式な .app 名を取得 (Artifact)
-    local app_info=$(brew info --cask "$selected")
-    local app_name=$(echo "$app_info" | grep -o "[A-Za-z0-9 ]*\.app" | head -n 1 | awk '{$1=$1};1') # trim
-    local app_path="/Applications/$app_name"
-
-    if [ -n "$app_name" ] && [ -e "$app_path" ]; then
-        echo "---------------------------------------------------"
-        echo "⚠️  COLLISION DETECTED: '$app_name' exists."
-        echo "📂 Location: $app_path"
-        
-        # シンボリックリンク判定 (これが重要！)
-        if [ -L "$app_path" ]; then
-             echo "🔗 Type: Symlink (Managed by Homebrew/Nix)"
-             echo "✅ Safe to proceed. (Just adding to config)"
+    zellij action new-tab --name "$job_name" --cwd "$HOME" -- zsh -c "
+        echo '🔑 Auth Required for Install...';
+        echo '--------------------------------';
+        sudo -v; 
+        if sudo ~/dotfiles/scripts/cockpit-update.sh; then
+            osascript -e 'display notification \"Installed: $selected 🚀\" with title \"Cockpit\"';
+            echo '✅ Done. Closing...';
+            sleep 3;
+            zellij action close-tab;
         else
-             echo "📁 Type: Real Directory (Likely Manual Install)"
-             echo "🚨 This will conflict with Nix installation."
+            echo '❌ Failed.';
+            osascript -e 'display notification \"Install Failed: $selected ⚠️\" with title \"Cockpit\"';
+            echo 'Press Enter to inspect logs...';
+            read;
         fi
-        echo "---------------------------------------------------"
-
-        # ユーザーに判断を委ねる
-        echo "🤖 Proposal: Adopt '$app_name' into Cockpit (Nix)?"
-        echo "   [Action] 1. Move current app to Trash"
-        echo "            2. Add to darwin.nix"
-        echo "            3. Install via Nix (Clean Install)"
-        
-        if gum confirm "🚀 Do you want to Adopt this app?"; then
-            echo "🗑️  Moving '$app_path' to Trash..."
-            mv "$app_path" "$HOME/.Trash/"
-        else
-            echo "❌ Cancelled. Keeping manual installation."
-            return 1
-        fi
-    else
-        echo "✅ No conflict found. Proceeding with fresh install."
-    fi
-
-    # 設定ファイルへの追記
-    echo "📝 Adding '$selected' to Nix config..."
-    if sed --version 2>/dev/null | grep -q GNU; then
-        sed -i "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
-    else
-        sed -i '' "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
-    fi
-
-    # インストール実行
-    echo "🚀 Installing via Nix..."
-    nix-up
+    "
+    
+    echo "✅ Job started in background tab. You can keep working!"
 }
 
 # --- 2. Universal Runner ---
