@@ -1,28 +1,25 @@
-🚀 AeroSpace Cheat Sheet (Cockpit Edition)
+🚀 AeroSpace Grandmaster Cheat Sheet
 
-[ 🧭 Navigation - App Centric ]
-Alt + W   : Go to Web   (Chrome / Arc)
-Alt + D   : Go to Dev   (VS Code / Term)
-Alt + C   : Go to Chat  (Slack / Discord)
-Alt + M   : Go to Media (Spotify)
-Alt + Tab : Back & Forth (直前の作業に戻る)
+[ 🧭 Navigation ]
+Alt + W/D/C/M : Go to Web/Dev/Chat/Media
+Alt + \       : Back to Prev Workspace
+Alt + Tab     : Back to Prev Window
+Alt + E       : Rescue Radar (Mission Control)
 
-[ 🪄 Actions ]
-Alt + Enter   : New Terminal
-Alt + Q       : Close Window
-Alt + Shift + [W/D/C/M] : Move Window to that Workspace
+[ 🦸 God Mode (Alt + ;) ]
+ h/j/k/l      : Move Window
+ S-h / S-l    : Move to Next Monitor
+ w/d/c/m      : Throw to Workspace
+ - / = / 0    : Volume Down/Up/Mute
+ g / S-g      : Cinema Mode (No Gaps) / Normal
+ f / s / t    : Float / Stack / Tile
 
-[ 📐 Layouts ]
-Alt + S   : Stack Mode (全集中・重ねる)
-Alt + T   : Tile Mode  (分割・並べる)
-Alt + F   : Float Toggle (浮かす)
-Alt + Z   : Zoom / Fullscreen (最大化)
-Alt + B   : Balance Sizes (均等に整頓)
-
-[ 🎮 Vim Controls ]
-Focus : Alt + H / J / K / L
-Move  : Alt + Shift + H / J / K / L
-Resize: Alt + R  (then H/J/K/L, Esc to exit)
+[ 🪄 Layouts ]
+Alt + S : Stack (全集中)
+Alt + T : Tile  (分割)
+Alt + F : Float (浮遊)
+Alt + Z : Zoom  (最大化)
+Alt + B : Balance Sizes
 
 [ ❓ Help ]
-Alt + /   : Show this Cheat Sheet
+Alt + / : This Screen
