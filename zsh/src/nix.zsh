@@ -94,3 +94,36 @@ alias up="nix-up"
 alias add="nix-add"
 alias app="cask-add"
 alias watch="log-up"
+
+## 👁️ Monitor: Auto-Close Edition (Smart Watch)
+function log-up() {
+    local log_file="/tmp/cockpit_nix.log"
+    
+    if [ ! -f "$log_file" ]; then
+        echo "📭 No logs found. Run 'up' first."
+        return
+    fi
+
+    # 自動終了する監視コマンドを作成
+    # 1. 最初からログを表示 (tail -n +1)
+    # 2. 追記を監視 (-f)
+    # 3. 成功/失敗の文字が出たらループを抜けて終了
+    local smart_cmd="tail -n +1 -f '$log_file' | while read line; do echo \"\$line\"; if [[ \"\$line\" == *'✅ Success'* ]] || [[ \"\$line\" == *'❌ Failed'* ]]; then break; fi; done"
+
+    # Zellijの中にいる場合
+    if [ -n "$ZELLIJ" ]; then
+        echo "🛰️  Opening Mission HUD (Auto-Close)..."
+        # --close-on-exit: コマンドが終わったらペインも閉じる
+        zellij run --name "🛰️ Mission Log" --floating --width 85% --height 85% --close-on-exit -- bash -c "$smart_cmd"
+    else
+        # Zellij外
+        echo "👁️  Monitoring... (Auto-exit on finish)"
+        bash -c "$smart_cmd"
+    fi
+}
+
+# エイリアス
+alias watch="log-up"
+
+# 手動でじっくり見たい時用のコマンドも残しておく
+alias analyze="lnav /tmp/cockpit_nix.log"

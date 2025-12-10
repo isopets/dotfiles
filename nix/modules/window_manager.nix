@@ -1,13 +1,26 @@
 { pkgs, ... }:
 
 {
+  # =========================================================
+  # 🎨 Active Borders (JankyBorders)
+  # =========================================================
+  services.jankyborders = {
+    enable = true;
+    # アクティブ: 青紫系 (視認性重視), 非アクティブ: 透明
+    active_color = "0xff7c4dff"; 
+    inactive_color = "0x00000000";
+    width = 6.0;
+    hidpi = true;
+    order = "above";
+    style = "round";
+  };
+
   services.aerospace = {
     enable = true;
     settings = {
       # =========================================================
-      # 🎨 Visuals (Gaps & Padding)
+      # 📐 Gaps (見た目の余白)
       # =========================================================
-      # ウィンドウ間の隙間（美しさと視認性アップ）
       gaps = {
         inner.horizontal = 10;
         inner.vertical   = 10;
@@ -18,83 +31,90 @@
       };
 
       # =========================================================
-      # 🚦 Window Rules (自動フローティング)
+      # 🚦 Window Rules (自動振り分け & フローティング)
       # =========================================================
-      # これらはタイル化せず、最初から浮かせます
       on-window-detected = [
-        {
-          "if".app-id = "com.apple.finder";
-          run = "layout floating";
-        }
-        {
-          "if".app-id = "com.apple.systempreferences";
-          run = "layout floating";
-        }
-        {
-          "if".app-id = "com.apple.calculator";
-          run = "layout floating";
-        }
-        {
-          "if".app-id = "com.apple.archiveutility";
-          run = "layout floating";
-        }
+        # --- Floating Apps (タイル化しない) ---
+        { "if".app-id = "com.apple.finder"; run = "layout floating"; }
+        { "if".app-id = "com.apple.systempreferences"; run = "layout floating"; }
+        { "if".app-id = "com.apple.calculator"; run = "layout floating"; }
+        { "if".app-id = "com.apple.archiveutility"; run = "layout floating"; }
+        { "if".app-id = "com.raycast.macos"; run = "layout floating"; }
+        { "if".app-id = "com.1password.1password"; run = "layout floating"; }
+
+        # --- Smart Routing (アプリを固定住所へ) ---
+        # [W] Web Area
+        { "if".app-id = "com.google.Chrome"; run = "move-node-to-workspace 'W-Web 🌐'"; }
+        { "if".app-id = "company.thebrowser.Browser"; run = "move-node-to-workspace 'W-Web 🌐'"; }
+        
+        # [D] Dev Area
+        { "if".app-id = "com.microsoft.VSCode"; run = "move-node-to-workspace 'D-Dev 💻'"; }
+        { "if".app-id = "org.alacritty"; run = "move-node-to-workspace 'D-Dev 💻'"; }
+        { "if".app-id = "com.google.android.studio"; run = "move-node-to-workspace 'D-Dev 💻'"; }
+        
+        # [C] Chat Area
+        { "if".app-id = "com.tinyspeck.slackmacgap"; run = "move-node-to-workspace 'C-Chat 💬'"; }
+        { "if".app-id = "com.hnc.Discord"; run = "move-node-to-workspace 'C-Chat 💬'"; }
+        { "if".app-id = "jp.naver.line.mac"; run = "move-node-to-workspace 'C-Chat 💬'"; }
+        
+        # [M] Media Area
+        { "if".app-id = "com.spotify.client"; run = "move-node-to-workspace 'M-Media 🎵'"; }
       ];
 
       # =========================================================
       # ⌨️ Keybindings (Alt = Option)
       # =========================================================
       mode.main.binding = {
-        # --- 1. アプリ起動 ---
-        alt-enter = "exec-and-forget open -n -a Alacritty";
+        # --- 🚀 App-Centric Navigation (頭文字移動) ---
+        alt-w = "workspace 'W-Web 🌐'";
+        alt-d = "workspace 'D-Dev 💻'";
+        alt-c = "workspace 'C-Chat 💬'";
+        alt-m = "workspace 'M-Media 🎵'";
+        
+        # --- 🪄 The Summoner (アプリを現在地へ呼ぶ) ---
+        alt-shift-w = "move-node-to-workspace 'W-Web 🌐'";
+        alt-shift-d = "move-node-to-workspace 'D-Dev 💻'";
+        alt-shift-c = "move-node-to-workspace 'C-Chat 💬'";
+        alt-shift-m = "move-node-to-workspace 'M-Media 🎵'";
 
-        # --- 2. フォーカス移動 (Vim風) ---
+        # --- ❓ Cheat HUD (カンニングペーパー) ---
+        # Zellijのフローティング機能でヘルプを表示
+        alt-slash = "exec-and-forget zellij run --name '⌨️ Shortcuts' --floating --width 60% --height 60% -- bash -c 'cat ~/dotfiles/cheats/aerospace.txt && read'";
+
+        # --- Standard Operations ---
+        alt-enter = "exec-and-forget open -n -a Alacritty";
+        alt-q = "close";
+        
+        # --- Layout & Focus ---
+        alt-s = "layout accordion";               # Stack Mode (全集中)
+        alt-t = "layout tiles horizontal vertical"; # Tile Mode (分割)
+        alt-f = "layout floating toggle";         # Float Toggle
+        alt-z = "fullscreen";                     # Zoom / Fullscreen (Alt+MはMediaに使ったためZに変更)
+        alt-b = "balance-sizes";                  # Balance (整頓)
+        alt-tab = "focus-back-and-forth";         # Previous Window
+
+        # --- Vim Focus ---
         alt-h = "focus left";
         alt-j = "focus down";
         alt-k = "focus up";
         alt-l = "focus right";
-
-        # --- 3. ウィンドウ移動 (Vim風) ---
+        
+        # --- Vim Move ---
         alt-shift-h = "move left";
         alt-shift-j = "move down";
         alt-shift-k = "move up";
         alt-shift-l = "move right";
-
-        # --- 4. レイアウト切り替え (ここが重要！) ---
-        alt-s = "layout accordion";               # Stack (重ねる) モード
-        alt-t = "layout tiles horizontal vertical"; # Tile (分割) モード
-        alt-f = "layout floating toggle";         # Float (浮遊) トグル
-
-        # --- 5. 分割方向の変更 ---
-        alt-slash = "layout tiles horizontal vertical"; # 縦横ローテーション
-        alt-comma = "layout accordion horizontal vertical"; # スタック方向変更
-
-        # --- 6. ワークスペース移動 ---
-        alt-1 = "workspace 1";
-        alt-2 = "workspace 2";
-        alt-3 = "workspace 3";
-        alt-4 = "workspace 4";
-        alt-5 = "workspace 5";
-
-        # --- 7. ワークスペースへ移動 ---
-        alt-shift-1 = "move-node-to-workspace 1";
-        alt-shift-2 = "move-node-to-workspace 2";
-        alt-shift-3 = "move-node-to-workspace 3";
-        alt-shift-4 = "move-node-to-workspace 4";
-        alt-shift-5 = "move-node-to-workspace 5";
-
-        # --- 8. その他 ---
-        alt-q = "close";         # 閉じる
-        alt-r = "mode resize";   # リサイズモードへ
+        
+        # --- Resize Mode ---
+        alt-r = "mode resize";
       };
-
-      # =========================================================
-      # 📏 Resize Mode
-      # =========================================================
+      
       mode.resize.binding = {
         h = "resize width -50";
         j = "resize height +50";
         k = "resize height -50";
         l = "resize width +50";
+        b = "balance-sizes";
         enter = "mode main";
         esc = "mode main";
       };
