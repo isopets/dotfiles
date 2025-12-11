@@ -1,92 +1,126 @@
 # =================================================================
-# 🚀 Cockpit Productivity Plus (v4.0 Async Edition)
-# [AI_NOTE]
-# "Fire and Forget" 思想の実装。
-# ユーザーを待たせない。認証さえ通れば、あとは裏のタブ(Zellij)で執事がやる。
+# 🚀 Cockpit Productivity Plus (v9.0 Full Restoration)
 # =================================================================
 
-# --- 1. Async App Installer ---
-function app() {
-    local query="$1"
-    
-    # 1. 検索・選択フェーズ (ここは対話が必要なので待つ)
-    if [ -z "$query" ]; then query=$(gum input --placeholder "App Name"); fi
-    [ -z "$query" ] && return
-    
-    local selected
-    selected=$(brew search --cask "$query" | grep -v "==>" | gum filter --placeholder "Select App")
-    [ -z "$selected" ] && return
+# --- 1. Context-Aware Launcher (copen) ---
+function copen() {
+    setopt local_options nullglob
+    local target="${1:-.}"
+    local context_dir="$target"
+    if [ -f "$target" ]; then context_dir=$(dirname "$target"); fi
 
-    # 2. 設定ファイルへの追記 (一瞬で終わる)
-    local config_file="$HOME/dotfiles/nix/modules/darwin.nix"
-    if grep -q "\"$selected\"" "$config_file"; then
-        echo "⚠️  Already in config. Re-installing..."
-    else
-        if sed --version 2>/dev/null | grep -q GNU; then
-            sed -i "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
-        else
-            sed -i '' "/casks =/s/\];/ \"$selected\" \];/" "$config_file"
-        fi
-        echo "📝 Added '$selected' to config."
+    local profile=""
+    if [ -f "$context_dir/.cockpit_profile" ]; then profile=$(cat "$context_dir/.cockpit_profile")
+    elif [ -n "$(ls "$context_dir"/*.py 2>/dev/null)" ] || [ -f "$context_dir/pyproject.toml" ]; then profile="[Lang] Python"
+    elif [ -f "$context_dir/package.json" ]; then profile="[Lang] Web"
+    elif [ -f "$context_dir/Cargo.toml" ]; then profile="[Lang] Rust"
+    elif [ -f "$context_dir/go.mod" ]; then profile="[Lang] Go"
+    else profile="[Base] Common"; fi
+
+    if ! code --list-profiles | grep -q "$profile"; then profile="[Base] Common"; fi
+    echo "🚀 Launching with: $profile"
+    code --profile "$profile" "$target"
+}
+
+# --- 2. The Omni-Creator (mkproj) ---
+function mkproj() {
+    local name="$1"; local stack="$2"
+    if [ -z "$name" ]; then name=$(gum input --placeholder "Project Name"); fi
+    [ -z "$name" ] && return 1
+    if [ -z "$stack" ]; then stack=$(gum choose "🐍 Python" "🌐 Web/Node" "🦀 Rust" "🐹 Go" "📂 Blank"); fi
+    [ -z "$stack" ] && return 1
+
+    local p="$HOME/PARA/1_Projects/$name/_Code"
+    if [ -d "$p" ]; then copen "$p"; return; fi
+    mkdir -p "$p" "$HOME/PARA/1_Projects/$name/_Docs" "$HOME/PARA/1_Projects/$name/_Assets"
+    git init "$p" >/dev/null; cd "$p"
+
+    case "$stack" in
+        *"Python"*) uv init >/dev/null 2>&1; echo 'run:\n\tuv run main.py' > Justfile; echo 'print("Hello")' > main.py ;;
+        *"Web"*) npm init -y >/dev/null 2>&1; echo 'run:\n\tnpm run dev' > Justfile ;;
+        *"Rust"*) cargo init >/dev/null 2>&1; echo 'run:\n\tcargo run' > Justfile ;;
+        *"Go"*) go mod init "$name" >/dev/null 2>&1; echo 'package main\nfunc main(){}' > main.go; echo 'run:\n\tgo run main.go' > Justfile ;;
+        *) touch README.md ;;
+    esac
+    copen .
+}
+
+# --- 3. The Architect (mklang) ---
+function mklang() {
+    local l="$1"; [ -z "$l" ] && l=$(gum input --placeholder "Language Name")
+    [ -z "$l" ] && return
+    local pkgs=$(ask "Nix packages for $l? (Space separated)")
+    if gum confirm "Install $pkgs?"; then
+        for p in ${(s: :)pkgs}; do sed -i '' "/^  ];/i \\    $p" "$HOME/dotfiles/nix/pkgs.nix" 2>/dev/null || sed -i "/^  ];/i \\    $p" "$HOME/dotfiles/nix/pkgs.nix"; done
+        (nix-up >/dev/null &)
     fi
-
-    # 3. インストール実行 (非同期化)
-    echo "🚀 Dispatching background installer..."
-
-    # 新しいタブを作り、そこで認証 -> 実行 -> 自動クローズを行う
-    # (ユーザーの今の画面はブロックされない！)
-    local job_name="📦 Installing $selected"
-    
-    zellij action new-tab --name "$job_name" --cwd "$HOME" -- zsh -c "
-        echo '🔑 Auth Required for Install...';
-        echo '--------------------------------';
-        sudo -v; 
-        if sudo ~/dotfiles/scripts/cockpit-update.sh; then
-            osascript -e 'display notification \"Installed: $selected 🚀\" with title \"Cockpit\"';
-            echo '✅ Done. Closing...';
-            sleep 3;
-            zellij action close-tab;
-        else
-            echo '❌ Failed.';
-            osascript -e 'display notification \"Install Failed: $selected ⚠️\" with title \"Cockpit\"';
-            echo 'Press Enter to inspect logs...';
-            read;
-        fi
-    "
-    
-    echo "✅ Job started in background tab. You can keep working!"
+    local exts=$(ask "VS Code extensions for $l? (3 IDs)")
+    if gum confirm "Install extensions?"; then
+        for e in ${(s: :)exts}; do code --profile "[Lang] $l" --install-extension "$e" >/dev/null; done
+    fi
 }
 
-# --- 2. Universal Runner ---
+# --- 4. Project Localizer (mklocal) ---
+function mklocal() {
+    local n=${PWD##*/}; local p="[Proj] $n"
+    mkdir -p "$HOME/dotfiles/vscode/profiles/$p"
+    echo "{\"workbench.colorCustomizations\":{\"activityBar.background\":\"#ff5c5c\"},\"window.title\":\"\${dirty} [🔒 LOCAL] \${activeEditorMedium}\"}" > "$HOME/dotfiles/vscode/profiles/$p/settings.json"
+    echo "$p" > .cockpit_profile
+    copen .
+}
+
+# --- 5. Async App Installer (app) ---
+function app() {
+    local q="$1"; [ -z "$q" ] && q=$(gum input); [ -z "$q" ] && return
+    local s=$(brew search --cask "$q" | grep -v "==>" | gum filter)
+    [ -z "$s" ] && return
+    local c="$HOME/dotfiles/nix/modules/darwin.nix"
+    if ! grep -q "\"$s\"" "$c"; then
+        sed -i '' "/casks =/s/\];/ \"$s\" \];/" "$c" 2>/dev/null || sed -i "/casks =/s/\];/ \"$s\" \];/" "$c"
+    fi
+    zellij action new-tab --name "📦 $s" --cwd "$HOME" -- zsh -c "echo '🔑 Auth...'; sudo -v; if sudo ~/dotfiles/scripts/cockpit-update.sh; then osascript -e 'display notification \"Installed: $s\"'; sleep 3; zellij action close-tab; else echo '❌ Failed.'; read; fi"
+}
+
+# --- 6. Universal Runner (run) ---
 function run() {
-    local cmd=""
-    if [ -f "Justfile" ] || [ -f "justfile" ]; then
-        [ -n "$1" ] && cmd="just $@" || cmd="just $(just --summary | tr ' ' '\n' | gum choose)"
-    elif [ -f "package.json" ] && grep -q '"dev":' package.json; then cmd="npm run dev"
-    elif [ -f "main.py" ]; then cmd="python main.py"
-    elif [ -f "Cargo.toml" ]; then cmd="cargo run"
-    elif [ -f "Makefile" ]; then cmd="make"
+    local c=""
+    if [ -f "Justfile" ] || [ -f "justfile" ]; then [ -n "$1" ] && c="just $@" || c="just $(just --summary | tr ' ' '\n' | gum choose)"
+    elif [ -f "package.json" ] && grep -q '"dev":' package.json; then c="npm run dev"
+    elif [ -f "main.py" ]; then c="python main.py"
     else echo "🤔 No runnable config."; return; fi
-    
-    [ -z "$cmd" ] && return
-    echo "🚀 Executing: $cmd"
-    eval "$cmd" || {
-        echo "💥 Failed."
-        gum confirm "🔥 Ask AI to fix?" && ask "Fix this command error:\nCmd: $cmd"
-    }
+    [ -z "$c" ] && return
+    echo "🚀 $c"; eval "$c" || { echo "💥 Failed."; gum confirm "🔥 Fix?" && ask "Fix error:\n$c"; }
 }
 
-# --- 3. Utilities ---
-function mkjust() { [ -f "Justfile" ] && return; ask "Create Justfile for:\n$(ls -F)" > Justfile; }
-function undo() { local g=$(home-manager generations|gum choose|awk '{print $7}'); [ -n "$g" ] && "$g/activate"; }
-function explain() { ask "Explain command:\n$*"; }
-function purge() { 
-    local g=$(brew bundle cleanup --file=~/dotfiles/nix/modules/darwin.nix --global 2>/dev/null)
-    [ -z "$g" ] && echo "✨ Clean." && return
-    echo "⚠️  Ghosts:\n$g"; gum confirm "🔥 Burn?" && brew bundle cleanup --force --file=~/dotfiles/nix/modules/darwin.nix --global
+# --- 7. Neuro & Utils ---
+function play() {
+    local l="$1"; [ -z "$l" ] && l=$(gum input)
+    local d="Play_${l}_$(date +%H%M%S)"; local p="$HOME/PARA/0_Inbox/Playground/$d"; mkdir -p "$p"; cd "$p"
+    case "$l" in
+        "python"|"py") uv init >/dev/null 2>&1; echo 'run:\n\tuv run main.py' > Justfile; echo 'print("🧪 Python")' > main.py ;;
+        "web"|"js") npm init -y >/dev/null 2>&1; echo 'run:\n\tnode index.js' > Justfile; echo 'console.log("🧪 JS")' > index.js ;;
+        *) touch scratch.txt ;;
+    esac
+    copen .
 }
+function flow() {
+    if [ "$1" = "off" ]; then echo "🌅 Flow Ended."; return; fi
+    echo "🌊 Flow State: ON"; pkill "Slack"; pkill "Discord"
+    clear; echo -e "\n\033[1;36m   🌊 ZONE ENTERED \033[0m\n"
+}
+
+# Utilities
+function mkjust() { [ -f "Justfile" ] && return; ask "Create Justfile for:\n$(ls -F)" > Justfile; }
+function snapshot() { local p=$(find "$HOME/dotfiles/vscode/profiles" -maxdepth 1 -type d | sed "s|$HOME/dotfiles/vscode/profiles/||" | grep -v "^$" | gum filter); [ -z "$p" ] && return; code --profile "$p" --list-extensions > "$HOME/dotfiles/vscode/profiles/$p/extensions.txt"; echo "✅ Saved"; }
+function memo() { local n="${1:-Note_$(date +%Y-%m-%d_%H-%M-%S).md}"; mkdir -p ~/PARA/0_Inbox; code "$HOME/PARA/0_Inbox/$n"; }
+function scratch() { memo SCRATCH.md; }
+function tmp() { local p="$HOME/PARA/0_Inbox/Tmp/$(date +%Y-%m-%d)"; mkdir -p "$p"; cd "$p"; echo "📂 Tmp: $p"; }
+function pastefile() { local n="${1:-clipboard_$(date +%H-%M-%S).txt}"; pbpaste > "$n"; echo "✅ Saved: $n"; }
 
 # Aliases
+alias code="copen"
 alias start="run"
-alias rollback="undo"
+alias pl="play"
+alias pf="pastefile"
+alias zone="flow"
 alias wtf="explain"
