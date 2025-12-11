@@ -1,4 +1,4 @@
-# --- 00_core.zsh : The Foundation (Enhanced) ---
+# --- 00_core.zsh : The Foundation (Auto-Deploy Edition) ---
 
 # Context Launcher
 function copen() {
@@ -26,44 +26,62 @@ function load_secrets() {
 }
 alias sk="load_secrets"
 
-# --- Restored Utilities ---
-
-# 💾 Save Cockpit
+# --- 🚀 Smart Save & Deploy System ---
 function save-cockpit() {
     local dir="$HOME/dotfiles"
+    local msg="$1"
+
+    # 1. 変更チェック
     if [ -z "$(git -C "$dir" status --porcelain)" ]; then
-        echo "✅ No changes."
+        echo "✅ No changes to save."
         return
     fi
-    echo "💾 Saving Cockpit state..."
+
+    # 2. メッセージ入力
+    if [ -z "$msg" ]; then
+        msg=$(gum input --placeholder "Commit Message")
+    fi
+    [ -z "$msg" ] && msg="Update: $(date '+%Y-%m-%d %H:%M')"
+
+    echo "💾 Saving to develop..."
     git -C "$dir" add .
-    git -C "$dir" commit -m "save: $(date '+%Y-%m-%d %H:%M')"
-    git -C "$dir" push
-    echo "☁️  Saved & Synced!"
+    git -C "$dir" commit -m "$msg"
+    git -C "$dir" push origin develop
+
+    # 3. Mainへの自動マージ
+    echo ""
+    if gum confirm "🚀 Release to Main?"; then
+        echo "⚡️ Deploying..."
+        git -C "$dir" checkout main
+        git -C "$dir" merge develop
+        git -C "$dir" push origin main
+        git -C "$dir" checkout develop
+        echo "✅ All Synced!"
+    else
+        echo "👍 Saved to develop."
+    fi
 }
 alias save="save-cockpit"
+alias ship="save-cockpit"
 
 # 🧹 Clean Garbage
 function del() {
-    echo "🗑️  Cleaning system garbage..."
+    echo "🗑️  Cleaning..."
     find . -name ".DS_Store" -delete
-    # nix-collect-garbage --delete-older-than 7d # 安全のためコメントアウト
     echo "✨ Cleaned."
 }
 
-# ❓ Interactive Help
+# ❓ Help
 function cockpit-help() {
-    echo "🤔 What do you want to do?"
-    local selected=$(gum choose --header="🚀 Cockpit Actions" --height=15 \
-        "✨ New Project        (m)    | mkproj" \
-        "🚀 Start Work         (w)    | work" \
-        "📝 Daily Report       (done) | daily" \
-        "💾 Save Cockpit       (save) | save-cockpit" \
-        "🏥 Health Check       (check)| audit" \
-        "🤖 Ask AI             (ask)  | ask")
-    [ -z "$selected" ] && return
-    local cmd=$(echo "$selected" | awk -F '|' '{print $2}' | xargs)
-    echo "Executing: $cmd ..."
-    eval "$cmd"
+    local s=$(gum choose "✨ New Project" "🚀 Start Work" "💾 Save & Ship" "📝 Daily Report" "🏥 Health Check" "🤖 Ask AI")
+    [ -z "$s" ] && return
+    case "$s" in
+        *"New"*) mkproj ;;
+        *"Start"*) work ;;
+        *"Save"*) save-cockpit ;;
+        *"Daily"*) daily ;;
+        *"Health"*) audit ;;
+        *"Ask"*) ask ;;
+    esac
 }
 alias \?="cockpit-help"
