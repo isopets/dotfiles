@@ -1,3 +1,4 @@
 [Base] Common:_common.json
 [Lang] Python:python.json
 [Lang] Web:web.json
+[Lang] Kotlin:kotlin.json

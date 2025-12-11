@@ -1,0 +1,12 @@
+{
+    "files.associations": { "*.kotlin": "kotlin" },
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#4ec9b0",
+        "titleBar.activeBackground": "#4ec9b0",
+        "titleBar.activeForeground": "#1a1a1a",
+        "statusBar.background": "#4ec9b0",
+        "statusBar.foreground": "#1a1a1a"
+    },
+    "window.title": "${dirty} [ Kotlin ] ${activeEditorMedium}",
+    "workbench.iconTheme": "material-icon-theme"
+}

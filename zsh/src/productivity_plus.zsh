@@ -1,5 +1,5 @@
 # =================================================================
-# 🚀 Cockpit Productivity Plus (v9.0 Full Restoration)
+# 🚀 Cockpit Productivity Plus (v9.1 Loop Fix)
 # =================================================================
 
 # --- 1. Context-Aware Launcher (copen) ---
@@ -17,9 +17,13 @@ function copen() {
     elif [ -f "$context_dir/go.mod" ]; then profile="[Lang] Go"
     else profile="[Base] Common"; fi
 
-    if ! code --list-profiles | grep -q "$profile"; then profile="[Base] Common"; fi
+    # プロファイル実体チェック
+    if ! command code --list-profiles | grep -q "$profile"; then profile="[Base] Common"; fi
+    
     echo "🚀 Launching with: $profile"
-    code --profile "$profile" "$target"
+    
+    # 【修正ポイント】 'command' をつけてエイリアスループを回避！
+    command code --profile "$profile" "$target"
 }
 
 # --- 2. The Omni-Creator (mkproj) ---
@@ -45,18 +49,33 @@ function mkproj() {
     copen .
 }
 
-# --- 3. The Architect (mklang) ---
+# --- 3. The Architect (mklang) [Neuro-Design Edition] ---
 function mklang() {
-    local l="$1"; [ -z "$l" ] && l=$(gum input --placeholder "Language Name")
-    [ -z "$l" ] && return
-    local pkgs=$(ask "Nix packages for $l? (Space separated)")
-    if gum confirm "Install $pkgs?"; then
+    local lang="$1"
+    [ -z "$lang" ] && lang=$(gum input --placeholder "Language Name")
+    [ -z "$lang" ] && return
+
+    echo "🏗️ Architecting for: $lang"
+    echo "🧠 Select Cognitive Mode:"
+    local mode=$(gum choose "🧠 Deep Focus (Blue)" "✨ Creative Flow (Purple)" "🌿 Steady Growth (Green)" "🛡️ Solid Structure (Orange)")
+    
+    local color="#4ec9b0" # default blue
+    case "$mode" in *"Purple"*) color="#c586c0";; *"Green"*) color="#6a9955";; *"Orange"*) color="#ce9178";; esac
+
+    local pkgs=$(ask "Nix packages for $lang?")
+    if [ -n "$pkgs" ] && gum confirm "Install $pkgs?"; then
         for p in ${(s: :)pkgs}; do sed -i '' "/^  ];/i \\    $p" "$HOME/dotfiles/nix/pkgs.nix" 2>/dev/null || sed -i "/^  ];/i \\    $p" "$HOME/dotfiles/nix/pkgs.nix"; done
         (nix-up >/dev/null &)
     fi
-    local exts=$(ask "VS Code extensions for $l? (3 IDs)")
-    if gum confirm "Install extensions?"; then
-        for e in ${(s: :)exts}; do code --profile "[Lang] $l" --install-extension "$e" >/dev/null; done
+
+    # Profile Creation
+    local pname="[Lang] $lang"
+    mkdir -p "$HOME/dotfiles/vscode/profiles/$pname"
+    echo "{\"workbench.colorCustomizations\":{\"activityBar.background\":\"$color\",\"titleBar.activeBackground\":\"$color\"},\"window.title\":\"\${dirty} [ $lang ] \${activeEditorMedium}\"}" > "$HOME/dotfiles/vscode/profiles/$pname/settings.json"
+    
+    local exts=$(ask "VS Code extensions for $lang?")
+    if [ -n "$exts" ] && gum confirm "Install extensions?"; then
+        for e in ${(s: :)exts}; do command code --profile "$pname" --install-extension "$e" >/dev/null; done
     fi
 }
 
@@ -92,35 +111,55 @@ function run() {
     echo "🚀 $c"; eval "$c" || { echo "💥 Failed."; gum confirm "🔥 Fix?" && ask "Fix error:\n$c"; }
 }
 
-# --- 7. Neuro & Utils ---
+# --- 7. Neuro & Utils (play, flow) ---
 function play() {
-    local l="$1"; [ -z "$l" ] && l=$(gum input)
-    local d="Play_${l}_$(date +%H%M%S)"; local p="$HOME/PARA/0_Inbox/Playground/$d"; mkdir -p "$p"; cd "$p"
-    case "$l" in
+    local lang="$1"
+    if [ -z "$lang" ]; then lang=$(gum input --placeholder "Language"); fi
+    [ -z "$lang" ] && return
+
+    local d="Play_${lang}_$(date +%H%M%S)"; local p="$HOME/PARA/0_Inbox/Playground/$d"; mkdir -p "$p"; cd "$p"
+    
+    case "$lang" in
         "python"|"py") uv init >/dev/null 2>&1; echo 'run:\n\tuv run main.py' > Justfile; echo 'print("🧪 Python")' > main.py ;;
         "web"|"js") npm init -y >/dev/null 2>&1; echo 'run:\n\tnode index.js' > Justfile; echo 'console.log("🧪 JS")' > index.js ;;
-        *) touch scratch.txt ;;
+        *) 
+            # AI Auto-Gen
+            echo "✨ Asking AI for $lang boilerplate..."
+            local res=$(ask "Create Hello World & Justfile for $lang. Output format: shell script to create files. No markdown.")
+            if [ -n "$res" ]; then eval "$res"; else touch scratch.txt; fi
+            ;;
     esac
     copen .
 }
+
 function flow() {
     if [ "$1" = "off" ]; then echo "🌅 Flow Ended."; return; fi
     echo "🌊 Flow State: ON"; pkill "Slack"; pkill "Discord"
     clear; echo -e "\n\033[1;36m   🌊 ZONE ENTERED \033[0m\n"
 }
 
-# Utilities
+# --- Helpers ---
+function ask() {
+    local p="$*"
+    [ -z "$p" ] && p=$(gum input --placeholder "Ask AI...")
+    if [ -f "$HOME/dotfiles/scripts/ask_ai.py" ]; then python3 "$HOME/dotfiles/scripts/ask_ai.py" "$p"; else echo "echo 'AI Unavailable'"; fi
+}
+function nix-up() { [ -f "$HOME/dotfiles/scripts/cockpit-update.sh" ] && sudo "$HOME/dotfiles/scripts/cockpit-update.sh"; }
 function mkjust() { [ -f "Justfile" ] && return; ask "Create Justfile for:\n$(ls -F)" > Justfile; }
-function snapshot() { local p=$(find "$HOME/dotfiles/vscode/profiles" -maxdepth 1 -type d | sed "s|$HOME/dotfiles/vscode/profiles/||" | grep -v "^$" | gum filter); [ -z "$p" ] && return; code --profile "$p" --list-extensions > "$HOME/dotfiles/vscode/profiles/$p/extensions.txt"; echo "✅ Saved"; }
-function memo() { local n="${1:-Note_$(date +%Y-%m-%d_%H-%M-%S).md}"; mkdir -p ~/PARA/0_Inbox; code "$HOME/PARA/0_Inbox/$n"; }
+function snapshot() { local p=$(find "$HOME/dotfiles/vscode/profiles" -maxdepth 1 -type d | sed "s|$HOME/dotfiles/vscode/profiles/||" | grep -v "^$" | gum filter); [ -z "$p" ] && return; command code --profile "$p" --list-extensions > "$HOME/dotfiles/vscode/profiles/$p/extensions.txt"; echo "✅ Saved"; }
+function memo() { local n="${1:-Note_$(date +%Y-%m-%d_%H-%M-%S).md}"; mkdir -p ~/PARA/0_Inbox; copen "$HOME/PARA/0_Inbox/$n"; }
 function scratch() { memo SCRATCH.md; }
 function tmp() { local p="$HOME/PARA/0_Inbox/Tmp/$(date +%Y-%m-%d)"; mkdir -p "$p"; cd "$p"; echo "📂 Tmp: $p"; }
 function pastefile() { local n="${1:-clipboard_$(date +%H-%M-%S).txt}"; pbpaste > "$n"; echo "✅ Saved: $n"; }
-
-# Aliases
-alias code="copen"
-alias start="run"
-alias pl="play"
-alias pf="pastefile"
-alias zone="flow"
-alias wtf="explain"
+# --- 8. Ambience (Restored) ---
+function ambience() {
+    local s="$1"
+    if [ -z "$s" ]; then s=$(gum choose "🌧️ Rain" "🔥 Fire" "☕ Cafe" "🌊 Ocean" "🔇 Stop"); fi
+    pkill "afplay" 2>/dev/null
+    case "$s" in
+        *"Rain"*) echo "🌧️ Rain..."; open "https://mynoise.net/NoiseMachines/rainNoiseGenerator.php" ;;
+        *"Fire"*) echo "🔥 Fire..."; open "https://mynoise.net/NoiseMachines/fireNoiseGenerator.php" ;;
+        *"Stop"*) echo "🔇 Stopped." ;;
+        *) echo "☕ Enjoy." ;;
+    esac
+}
