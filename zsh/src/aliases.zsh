@@ -56,3 +56,5 @@ alias memo="code ~/PARA/0_Inbox/Memo_$(date +%Y-%m-%d).md"
 # VS Codeを呼び出すときは必ず Context-Aware Launcher (copen) を通す
 alias code="copen"
 alias dump-cockpit="~/dotfiles/scripts/dump_context.sh"
+alias dev="dashboard"
+alias home="dashboard"
