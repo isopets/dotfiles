@@ -163,3 +163,51 @@ function ambience() {
         *) echo "☕ Enjoy." ;;
     esac
 }
+
+# =================================================================
+# 🧩 Restored Modules (From Legacy Files)
+# =================================================================
+
+# --- 9. Secrets Management (from secrets.zsh) ---
+function load_secrets() {
+    [ -n "$GEMINI_API_KEY" ] && return 0
+    echo "🔐 Unlocking Bitwarden..."
+    # 簡易版: APIキーを直接入力させる (Bitwarden CLIが複雑なため一時的に簡略化)
+    local k=$(gum input --password --placeholder "Enter Gemini API Key")
+    if [ -n "$k" ]; then
+        export GEMINI_API_KEY="$k"
+        echo "✅ Key Loaded temporarily."
+    fi
+}
+alias sk="load_secrets"
+
+# --- 10. Work Context (from project.zsh) ---
+function work() {
+    local n="$1"
+    if [ -z "$n" ]; then n=$(ls "$HOME/PARA/1_Projects" 2>/dev/null | fzf --prompt="🚀 Work > " --layout=reverse); fi
+    [ -z "$n" ] && return 1
+    
+    local p="$HOME/PARA/1_Projects/$n/_Code"
+    [ ! -d "$p" ] && echo "❌ Project code not found." && return 1
+    
+    echo "🚀 Work Mode: $n"
+    # ブラウザでGitHubなどを開く処理があればここに記述
+    copen "$p"
+}
+
+# --- 11. Daily Report (from productivity.zsh) ---
+function daily() {
+    local today=$(date +%Y-%m-%d)
+    local dir="$HOME/PARA/0_Inbox/Daily"
+    mkdir -p "$dir"
+    local file="$dir/${today}.md"
+    
+    if [ ! -f "$file" ]; then
+        echo "# Daily Report: $today" > "$file"
+        echo "" >> "$file"
+        echo "## 📝 Log" >> "$file"
+    fi
+    copen "$file"
+}
+alias done="daily"
+
