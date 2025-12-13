@@ -1,36 +1,34 @@
-# --- 30_neuro.zsh : Brain & Environment ---
+# --- 30_neuro.zsh (Safe Mode) ---
 
 function play() {
-    local l="$1"; [ -z "$l" ] && l=$(gum input) && [ -z "$l" ] && return
-    local d="Play_${l}_$(date +%H%M%S)"; local p="$HOME/PARA/0_Inbox/Playground/$d"
-    mkdir -p "$p"; cd "$p"
-    # Simplified logic for play
-    touch scratch.txt; echo "🚀 Playground: $l"; copen .
-}
-
-function ambience() {
-    local s=$(gum choose "🌧️ Rain" "🔥 Fire" "☕ Cafe" "🔇 Stop")
-    pkill "afplay" 2>/dev/null
-    case "$s" in
-        *"Rain"*) open "https://mynoise.net/NoiseMachines/rainNoiseGenerator.php" ;;
-        *"Fire"*) open "https://mynoise.net/NoiseMachines/fireNoiseGenerator.php" ;;
-        *"Stop"*) echo "🔇" ;;
-        *) echo "☕" ;;
-    esac
+    local l="$1"
+    if [ -z "$l" ]; then
+        l="python"
+    fi
+    
+    local d="Play_$(date +%H%M%S)"
+    local p="$HOME/PARA/0_Inbox/Playground/$d"
+    mkdir -p "$p"
+    cd "$p"
+    touch scratch.txt
+    echo "🚀 Playground created."
 }
 
 function dashboard() {
     clear
-    if command -v gum >/dev/null; then
-        gum style --border double --align center --width 50 --padding "0 2" "Good Day, $USER." "Keep moving."
-    else
-        echo "👋 Good Day, $USER."
+    echo "👋 Good Day, $USER."
+    echo ""
+    
+    if [ -d "$HOME/PARA/0_Inbox" ]; then
+        local c=$(ls "$HOME/PARA/0_Inbox" | wc -l | xargs)
+        echo "  📥 Inbox: $c"
     fi
-    local c=$(ls ~/PARA/0_Inbox 2>/dev/null | wc -l | xargs)
-    echo "  📥 Inbox: $c items"
-    echo "\n  🚀 Recent:"
-    ls -dt ~/PARA/1_Projects/*/ 2>/dev/null | head -n 3 | while read l; do echo "     🔹 $(basename "$l")"; done
+    
+    echo ""
+    echo "  👉 Type 'mk' for new project."
     echo ""
 }
+
 alias dev="dashboard"
 alias home="dashboard"
+alias bgm="echo '🎵 BGM feature is temporarily disabled.'"

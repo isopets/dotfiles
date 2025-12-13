@@ -1,76 +1,50 @@
-{ config, pkgs, pkgs-unstable, ... }:
+{ config, pkgs, ... }:
 
 {
-  # --- 1. Magical History ---
+  # --- 1. Magical History (Atuin) ---
+  # 以前使っていた「履歴同期」機能を復活
   programs.atuin = {
     enable = true;
     enableZshIntegration = true;
-    flags = [ "--disable-up-arrow" ];
-    settings = {
-      auto_sync = true;
-      sync_frequency = "5m";
-      search_mode = "fuzzy";
-      style = "compact";
-    };
+    flags = [ "--disable-up-arrow" ]; # 上キーは普通の履歴にする
   };
 
-  # --- 2. Core Integrations ---
-  programs.direnv = { enable = true; nix-direnv.enable = true; };
-  programs.mise = { enable = true; enableZshIntegration = true; };
-  programs.zoxide = { enable = true; enableZshIntegration = true; options = ["--cmd cd"]; };
-
-  # --- 3. Git & Delta (Modern Config) ---
-  programs.git = {
+  # --- 2. Fuzzy Finder (FZF) ---
+  # これを true にするだけで、Ctrl+R / Ctrl+T が自動設定されます
+  programs.fzf = {
     enable = true;
-    ignores = [
-      ".DS_Store"
-      "*.swp"
-    ];
-    # 最新仕様: ユーザー設定は settings ブロックへ
-    settings = {
-      user = {
-        name = "isopets";
-        email = "jandp.0717@gmail.com";
-      };
-      pull.rebase = false;
-      init.defaultBranch = "main";
-    };
+    enableZshIntegration = true;
+    defaultOptions = [ "--height 40%" "--layout=reverse" "--border" ];
   };
 
-  # Delta は独立設定
-  programs.delta = {
+  # --- 3. Directory Navigation (Zoxide) ---
+  # 'cd' コマンドを 'z' に置き換える設定
+  programs.zoxide = {
     enable = true;
-    enableGitIntegration = true;
-    options = {
-      side-by-side = true;
-      line-numbers = true;
-      theme = "Dracula";
-    };
+    enableZshIntegration = true;
+    options = [ "--cmd cd" ]; # cdコマンドをジャックする
   };
 
-  # --- 4. UI & Fonts ---
-  programs.starship.enable = true;
-  xdg.configFile."starship.toml".source = ../../config/starship.toml;
-  fonts.fontconfig.enable = true;
+  # --- 4. Environment (Direnv) ---
+  # フォルダに入った瞬間にPython環境などをロード
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+    enableZshIntegration = true;
+  };
+
+  # --- 5. Cheatsheet (Navi) ---
+  # Ctrl+G で「使いかた」を検索できる機能
+  programs.navi = {
+    enable = true;
+    enableZshIntegration = true;
+  };
   
-  # --- 5. Packages ---
-  home.packages = with pkgs; [
-    zsh-fzf-tab
-    trash-cli
-    shellcheck
-    shfmt
-    zellij
-    bottom
-    pre-commit
-    nvd
-    
-    pkgs-unstable.nh
-    pkgs-unstable.sheldon
-    pkgs-unstable.bitwarden-cli
-    pkgs-unstable.yazi
-    pkgs-unstable.navi
-    pkgs-unstable.just
-    pkgs-unstable.aider-chat
-    # pkgs-unstable.ollama
-  ];
+  # --- 6. Starship (Prompt) ---
+  programs.starship = {
+    enable = true;
+    enableZshIntegration = true;
+    # 設定ファイルは config フォルダから読み込む
+  };
+  xdg.configFile."starship.toml".source = ../../config/starship.toml;
 }

@@ -11,7 +11,20 @@ function copen() {
     fi
     echo "🚀 Launching: $p"; command code --profile "$p" "$t"
 }
-
+# ✅ Missing Link: Reload Function
+function reload() {
+    echo "🔄 Reloading Cockpit..."
+    
+    # 1. zshrcを読み込む (これが基本)
+    source ~/.zshrc
+    
+    # 2. モジュールローダーも念のため強制的に読み込む
+    if [ -f "$HOME/dotfiles/zsh/src/loader.zsh" ]; then
+        source "$HOME/dotfiles/zsh/src/loader.zsh"
+    fi
+    
+    echo "✨ Config Reloaded."
+}
 # Helpers
 function ask() {
     [ -f "$HOME/dotfiles/scripts/ask_ai.py" ] && python3 "$HOME/dotfiles/scripts/ask_ai.py" "$*" || echo "AI Offline"

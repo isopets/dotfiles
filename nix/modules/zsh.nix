@@ -7,36 +7,41 @@
     autosuggestion.enable = true;
     syntaxHighlighting.enable = true;
 
+    # --- 1. Aliases (Nix Managed) ---
     shellAliases = {
-      ls = "eza --icons --git";
+      # Visuals
+      ls = "eza --icons --git --group-directories-first";
+      ll = "eza --icons --git -l --group-directories-first";
       cat = "bat";
       grep = "rg";
-      find = "fd";
-      vi = "nvim";
-      vim = "nvim";
+      
+      # Operations
       cp = "cp -i";
       mv = "mv -i";
+      mkdir = "mkdir -p";
+      
+      # Cockpit Shortcuts
+      sz = "reload";
+      mk = "mkproj";
+      w  = "work";       # ← 追加: 仕事モード用
+      dev = "dashboard";
+      home = "dashboard"; # ← 維持: ダッシュボード用
+      help = "tldr";      # ← 維持: ヘルプ用
     };
 
-    # 🚨 修正: src フォルダ内の全ファイルを読み込む
-    initContent = ''
+    # --- 2. Init Script (Safe Mode) ---
+    initExtra = ''
       # 1. FZF-Tab
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
-      
-      # 2. Load Modular Source Files
-      LOAD_DIR="$HOME/dotfiles/zsh/src"
-      if [ -d "$LOAD_DIR" ]; then
-        for f in "$LOAD_DIR/"*.zsh; do
-          if [ -r "$f" ]; then
-             source "$f"
-          fi
-        done
-      fi
 
-      # 3. Init Hooks
-      command -v starship >/dev/null && eval "$(starship init zsh)"
-      command -v direnv >/dev/null && eval "$(direnv hook zsh)"
-      [ -f "$(which navi)" ] && eval "$(navi widget zsh)"
+      # 2. Cockpit Loader (外部モジュール読み込み)
+      if [ -f "$HOME/dotfiles/zsh/src/loader.zsh" ]; then
+        source "$HOME/dotfiles/zsh/src/loader.zsh"
+      fi
+      
+      # 3. Reload Function (Safe Alias)
+      # function {...} を使うとエラーになるので、aliasで安全に定義
+      alias reload="source ~/.zshrc && echo '✅ Config Reloaded.'"
     '';
   };
 }

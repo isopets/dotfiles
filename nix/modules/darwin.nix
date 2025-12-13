@@ -25,9 +25,6 @@
       KeyRepeat = 2;
       InitialKeyRepeat = 15;
     };
-    # 🚨 追加: .DS_Store 抑制設定
-    # (DSDontWriteNetworkStores: ネットワークドライブで作らない)
-    # (DSDontWriteUSBStores: USBメモリで作らない)
     CustomUserPreferences = {
       "com.apple.desktopservices" = {
         DSDontWriteNetworkStores = true;
@@ -36,25 +33,33 @@
     };
   };
 
-  # --- 2. Homebrew Integration (AeroSpace) ---
+  # --- 2. Homebrew Integration ---
   homebrew = {
     enable = true;
     onActivation = {
       autoUpdate = true;
-      cleanup = "zap"; # 記述にないアプリ(Yabai等)を削除
+      cleanup = "zap"; # 記述にないアプリを削除する強力な設定
       upgrade = true;
     };
-    taps = [ "nikitabobko/tap"  ];
-    casks = [ "aerospace"  "Alacritty"  "font-hackgen-nerd"  "xbar"  "karabiner-elements"  "htop" ];
+    taps = [ "nikitabobko/tap" ];
+    
+    # 🚨 修正: htop をここから削除しました
+    casks = [ 
+      "aerospace"
+      "alacritty"
+      "font-hackgen-nerd"
+      "xbar"
+      "karabiner-elements"
+      # "htop" <- これがエラーの原因でした
+    ];
   };
 
   # --- 3. Nix Core ---
   nix.enable = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes"  ];
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   
-  # Auto Optimise (Darwin)
-  nix.settings.auto-optimise-store = false; # Unstableでのクラッシュ防止のためfalse
-  nix.optimise.automatic = true;            # 定期実行で最適化
+  nix.settings.auto-optimise-store = false;
+  nix.optimise.automatic = true;
   
   system.stateVersion = 5;
 }
